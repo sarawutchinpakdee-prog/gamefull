@@ -13,13 +13,22 @@ const game = require('./src/game');
 const { requireAuth } = require('./src/auth');
 const { getGameSettings, addGameHistory, getGameHistory } = require('./src/store');
 
+// จำกัด origin ที่เรียก API/Socket.IO ข้ามโดเมนได้ ผ่าน env var ALLOWED_ORIGINS (คั่นด้วยจุลภาค)
+// เช่น "https://board.example.com,https://admin.example.com" — ถ้าไม่ตั้งค่าจะปิด cross-origin
+// ทั้งหมด (ปลอดภัยสุด และใช้ได้ปกติเพราะหน้าเว็บกับ API อยู่ origin เดียวกันอยู่แล้วโดย default)
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+const corsOrigin = ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS : false;
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } }); // dev only — จำกัด origin ตอน deploy จริง
+const io = new Server(server, { cors: { origin: corsOrigin } });
 
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
+app.use(cors({ origin: corsOrigin }));
 app.use(express.json({ limit: '5mb' })); // เผื่อกู้คืนไฟล์สำรอง (db+cards+settings รวมกัน) ที่ใหญ่กว่า default 100kb
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -468,4 +477,5 @@ server.listen(PORT, () => {
   console.log(`Board API + Realtime running: http://localhost:${PORT}`);
   console.log(`Admin panel:                  http://localhost:${PORT}/admin.html`);
   console.log(`Play (real-time game):        http://localhost:${PORT}/play.html`);
+  console.log(`CORS cross-origin:            ${ALLOWED_ORIGINS.length ? ALLOWED_ORIGINS.join(', ') : 'ปิด (same-origin เท่านั้น)'}`);
 });
