@@ -7,6 +7,7 @@ const CARDS_PATH = path.join(__dirname, '..', 'data', 'cards.json');
 const SETTINGS_PATH = path.join(__dirname, '..', 'data', 'settings.json');
 const HISTORY_PATH = path.join(__dirname, '..', 'data', 'game_history.json');
 const MAX_HISTORY_ENTRIES = 300;
+const BACKUP_DIR = path.join(__dirname, '..', 'data', 'backups');
 
 function readDB() {
   const raw = fs.readFileSync(DB_PATH, 'utf-8');
@@ -239,6 +240,52 @@ function getGameHistory() {
   }
 }
 
+// ส่งออกข้อมูลตั้งค่าทั้งหมด (บอร์ด, บัญชีแอดมิน, การ์ด, กติกาเกม) เป็นไฟล์เดียวเพื่อสำรอง/ย้ายเซิร์ฟเวอร์
+function exportConfig() {
+  return {
+    exportedAt: new Date().toISOString(),
+    db: readDB(),
+    cards: readCards(),
+    settings: getGameSettings(),
+  };
+}
+
+// สำรองไฟล์ปัจจุบันไว้ก่อนเขียนทับทุกครั้งที่กู้คืน กันพลาดกู้คืนไฟล์ที่ผิดแล้วข้อมูลเดิมหายถาวร
+function backupCurrentFiles() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const dir = path.join(BACKUP_DIR, stamp);
+  fs.mkdirSync(dir, { recursive: true });
+  for (const [name, srcPath] of [['db.json', DB_PATH], ['cards.json', CARDS_PATH], ['settings.json', SETTINGS_PATH]]) {
+    try {
+      fs.copyFileSync(srcPath, path.join(dir, name));
+    } catch (err) {
+      // ไฟล์อาจยังไม่เคยถูกสร้าง (เช่น settings.json ก่อนตั้งค่าครั้งแรก) ข้ามไปได้
+    }
+  }
+  return stamp;
+}
+
+function importConfig(bundle) {
+  if (!bundle || typeof bundle !== 'object') return { error: 'ไฟล์ไม่ถูกต้อง' };
+  const { db, cards, settings } = bundle;
+  if (!db || !Array.isArray(db.cells) || !Array.isArray(db.admins) || typeof db.cellTypes !== 'object') {
+    return { error: 'โครงสร้างข้อมูลกระดาน/บัญชีไม่ถูกต้อง' };
+  }
+  if (db.admins.length < 1) return { error: 'ต้องมีบัญชีแอดมินอย่างน้อย 1 บัญชีในไฟล์ที่กู้คืน' };
+  if (!cards || !Array.isArray(cards.quiz) || !Array.isArray(cards.angel)) {
+    return { error: 'โครงสร้างข้อมูลการ์ดไม่ถูกต้อง' };
+  }
+  if (!settings || typeof settings !== 'object') {
+    return { error: 'โครงสร้างข้อมูลตั้งค่าไม่ถูกต้อง' };
+  }
+
+  const backupStamp = backupCurrentFiles();
+  writeDB(db);
+  writeCards(cards);
+  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(settings, null, 2), 'utf-8');
+  return { ok: true, backupStamp };
+}
+
 module.exports = {
   readDB, writeDB, getAdminByUsername, getAdmins, createAdmin, deleteAdmin, updateAdminPassword, getCellTypes,
   getCells, getCellById, updateCell, EDITABLE_FIELDS,
@@ -246,4 +293,5 @@ module.exports = {
   getGameSettings, updateGameSettings, SETTINGS_FIELDS,
   getUploadedImages, deleteImage, getReferencedImages,
   addGameHistory, getGameHistory,
+  exportConfig, importConfig,
 };

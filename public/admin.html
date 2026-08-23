@@ -885,6 +885,22 @@
             การเปลี่ยนแปลงมีผลกับเกมที่กำลังเล่นอยู่ทันที (ผู้เล่นที่เข้าห้องอยู่แล้วไม่กระทบเงินที่มีอยู่)
           </div>
         </div>
+
+        <div class="settings-card">
+          <h2 style="font-family: 'Fraunces', serif; font-size: 17px; margin: 0 0 14px">
+            📦 สำรอง / กู้คืนข้อมูล
+          </h2>
+          <div class="effect-help" style="margin-bottom: 10px">
+            ไฟล์สำรองรวมข้อมูลกระดาน, บัญชีแอดมิน, การ์ด และกติกาเกมทั้งหมด (ไม่รวมประวัติเกม/รูปภาพ)
+          </div>
+          <button class="btn save" id="downloadBackupBtn" style="width: 100%">⬇️ ดาวน์โหลดไฟล์สำรอง</button>
+          <div style="height: 10px"></div>
+          <input type="file" id="restoreFileInput" accept="application/json" style="display: none" />
+          <button class="btn save" id="restoreBackupBtn" style="width: 100%; background: #b23a2e">
+            ⬆️ กู้คืนจากไฟล์สำรอง
+          </button>
+          <div class="save-status" id="backupStatus"></div>
+        </div>
       </div>
 
       <div id="accountsView" style="display: none">
@@ -1869,6 +1885,57 @@
         } finally {
           btn.disabled = false;
           btn.textContent = "บันทึกการตั้งค่า";
+        }
+      });
+
+      /* ---------- backup / restore (สำรอง/กู้คืนข้อมูล) ---------- */
+      document.getElementById("downloadBackupBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("backupStatus");
+        try {
+          const backup = await api("/api/admin/backup");
+          const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+          a.href = url;
+          a.download = `board-backup-${stamp}.json`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          statusEl.style.color = "#3f7d53";
+          statusEl.textContent = "ดาวน์โหลดไฟล์สำรองแล้ว ✓";
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = "ดาวน์โหลดไม่สำเร็จ: " + e.message;
+        }
+      });
+
+      const restoreFileInput = document.getElementById("restoreFileInput");
+      document.getElementById("restoreBackupBtn").addEventListener("click", () => {
+        restoreFileInput.value = "";
+        restoreFileInput.click();
+      });
+
+      restoreFileInput.addEventListener("change", async () => {
+        const file = restoreFileInput.files[0];
+        if (!file) return;
+        const statusEl = document.getElementById("backupStatus");
+
+        if (!confirm(`กู้คืนข้อมูลจาก "${file.name}"? ข้อมูลกระดาน/บัญชี/การ์ด/ตั้งค่าปัจจุบันจะถูกแทนที่ทั้งหมด (ระบบจะสำรองของเดิมไว้ก่อนเขียนทับ)`)) return;
+
+        try {
+          const text = await file.text();
+          const bundle = JSON.parse(text);
+          const result = await api("/api/admin/restore", {
+            method: "POST",
+            body: JSON.stringify(bundle),
+          });
+          statusEl.style.color = "#3f7d53";
+          statusEl.textContent = `กู้คืนสำเร็จ ✓ (สำรองของเดิมไว้ที่ ${result.backupStamp}) กรุณารีเฟรชหน้าเว็บ`;
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = "กู้คืนไม่สำเร็จ: " + e.message;
         }
       });
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const { getGameSettings, updateGameSettings } = require('./store');
+const { getGameSettings, updateGameSettings, exportConfig, importConfig } = require('./store');
 const { requireAuth } = require('./auth');
 
 const router = express.Router();
@@ -35,6 +35,18 @@ router.put('/settings', requireAuth, (req, res) => {
   const { error, patch } = validateSettingsPatch(req.body || {});
   if (error) return res.status(400).json({ error });
   res.json(updateGameSettings(patch));
+});
+
+// GET /api/admin/backup -> ไฟล์รวมข้อมูลกระดาน/บัญชี/การ์ด/กติกาเกม สำหรับดาวน์โหลดเก็บสำรอง
+router.get('/admin/backup', requireAuth, (req, res) => {
+  res.json(exportConfig());
+});
+
+// POST /api/admin/restore -> กู้คืนจากไฟล์สำรอง (สำรองไฟล์ปัจจุบันไว้ก่อนเขียนทับเสมอ)
+router.post('/admin/restore', requireAuth, (req, res) => {
+  const result = importConfig(req.body);
+  if (result.error) return res.status(400).json(result);
+  res.json(result);
 });
 
 module.exports = router;
