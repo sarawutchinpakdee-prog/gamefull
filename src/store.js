@@ -180,9 +180,44 @@ function updateGameSettings(patch) {
   return current;
 }
 
+// ดูรูปที่อัปโหลดและลบที่ไม่ใช้แล้ว
+function getUploadedImages() {
+  const uploadDir = path.join(__dirname, '..', 'public', 'uploads');
+  if (!fs.existsSync(uploadDir)) return [];
+  return fs.readdirSync(uploadDir)
+    .filter(f => /\.(png|jpg|jpeg|webp)$/i.test(f))
+    .map(filename => ({
+      filename,
+      url: `/uploads/${filename}`,
+      size: fs.statSync(path.join(uploadDir, filename)).size,
+    }));
+}
+
+function deleteImage(filename) {
+  // ประเมินความปลอดภัย: อนุญาตแค่ชื่อไฟล์ที่ถูกต้อง (timestamp-hex.ext)
+  if (!/^\d+-[0-9a-f]+\.(png|jpg|jpeg|webp)$/i.test(filename)) return false;
+  const filepath = path.join(__dirname, '..', 'public', 'uploads', filename);
+  if (!fs.existsSync(filepath)) return false;
+  fs.unlinkSync(filepath);
+  return true;
+}
+
+// ดูว่ารูปไฟล์ไหนถูกใช้ในตารางช่องบอร์ด (หลังจากลบต้องทำให้ปลอดภัย)
+function getReferencedImages() {
+  const db = readDB();
+  const urls = new Set();
+  db.cells.forEach(cell => {
+    if (cell.image_url && cell.image_url.startsWith('/uploads/')) {
+      urls.add(cell.image_url);
+    }
+  });
+  return urls;
+}
+
 module.exports = {
   readDB, writeDB, getAdminByUsername, getAdmins, createAdmin, deleteAdmin, updateAdminPassword, getCellTypes,
   getCells, getCellById, updateCell, EDITABLE_FIELDS,
   getQuizCards, getAngelCards, addCard, updateCard, deleteCard,
   getGameSettings, updateGameSettings, SETTINGS_FIELDS,
+  getUploadedImages, deleteImage, getReferencedImages,
 };

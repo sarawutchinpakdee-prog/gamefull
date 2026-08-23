@@ -805,6 +805,7 @@
         <button class="tab-btn" id="tabCards">🃏 การ์ด</button>
         <button class="tab-btn" id="tabSettings">⚙️ ตั้งค่า</button>
         <button class="tab-btn" id="tabAccounts">👤 บัญชี</button>
+        <button class="tab-btn" id="tabImages">🖼️ ภาพ</button>
       </div>
 
       <div id="boardView">
@@ -918,6 +919,17 @@
             <div class="save-status" id="changePasswordStatus"></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- ============ IMAGES VIEW ============ -->
+    <div id="imagesView" style="display: none">
+      <div class="cards-section">
+        <div class="cards-section-head">
+          <h2>🖼️ ไฟล์รูปภาพที่อัปโหลด</h2>
+          <button class="add-card-btn" id="refreshImagesBtn">🔄 รีเฟรช</button>
+        </div>
+        <div id="imagesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;"></div>
       </div>
     </div>
 
@@ -1264,11 +1276,13 @@
       const tabCards = document.getElementById("tabCards");
       const tabSettings = document.getElementById("tabSettings");
       const tabAccounts = document.getElementById("tabAccounts");
+      const tabImages = document.getElementById("tabImages");
       const boardView = document.getElementById("boardView");
       const roomsView = document.getElementById("roomsView");
       const cardsView = document.getElementById("cardsView");
       const settingsView = document.getElementById("settingsView");
       const accountsView = document.getElementById("accountsView");
+      const imagesView = document.getElementById("imagesView");
       let roomsPollTimer = null;
 
       tabBoard.addEventListener("click", () => switchTab("board"));
@@ -1276,6 +1290,7 @@
       tabCards.addEventListener("click", () => switchTab("cards"));
       tabSettings.addEventListener("click", () => switchTab("settings"));
       tabAccounts.addEventListener("click", () => switchTab("accounts"));
+      tabImages.addEventListener("click", () => switchTab("images"));
 
       function switchTab(tab) {
         tabBoard.classList.toggle("active", tab === "board");
@@ -1283,11 +1298,13 @@
         tabCards.classList.toggle("active", tab === "cards");
         tabSettings.classList.toggle("active", tab === "settings");
         tabAccounts.classList.toggle("active", tab === "accounts");
+        tabImages.classList.toggle("active", tab === "images");
         boardView.style.display = tab === "board" ? "block" : "none";
         roomsView.style.display = tab === "rooms" ? "block" : "none";
         cardsView.style.display = tab === "cards" ? "block" : "none";
         settingsView.style.display = tab === "settings" ? "block" : "none";
         accountsView.style.display = tab === "accounts" ? "block" : "none";
+        imagesView.style.display = tab === "images" ? "block" : "none";
 
         if (tab === "rooms") {
           loadRooms();
@@ -1298,6 +1315,7 @@
         if (tab === "cards") loadCards();
         if (tab === "settings") loadSettings();
         if (tab === "accounts") loadAccounts();
+        if (tab === "images") loadImages();
       }
 
       function stopRoomsPolling() {
@@ -1785,6 +1803,76 @@
           btn.textContent = "บันทึกการตั้งค่า";
         }
       });
+
+      /* ---------- images view (ไฟล์รูปภาพ) ---------- */
+      async function loadImages() {
+        const list = document.getElementById("imagesList");
+        try {
+          const images = await api("/api/admin/images");
+          renderImagesList(images);
+        } catch (e) {
+          list.innerHTML = `<div class="cards-empty">โหลดไม่สำเร็จ: ${escapeHtml(e.message)}</div>`;
+        }
+      }
+
+      function renderImagesList(images) {
+        const list = document.getElementById("imagesList");
+        list.innerHTML = "";
+        if (images.length === 0) {
+          list.innerHTML = `<div class="cards-empty">ไม่มีรูปภาพที่อัปโหลด</div>`;
+          return;
+        }
+        images.forEach((img) => {
+          const card = document.createElement("div");
+          card.style.cssText = "border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background: #f9f9f9;";
+
+          const preview = document.createElement("div");
+          preview.style.cssText = "width: 100%; height: 120px; background: #e0e0e0; display: flex; align-items: center; justify-content: center;";
+          const imgEl = document.createElement("img");
+          imgEl.src = img.url;
+          imgEl.alt = img.filename;
+          imgEl.style.cssText = "max-width: 100%; max-height: 100%; object-fit: cover;";
+          preview.appendChild(imgEl);
+          card.appendChild(preview);
+
+          const info = document.createElement("div");
+          info.style.cssText = "padding: 8px;";
+          const nameEl = document.createElement("div");
+          nameEl.style.cssText = "font-size: 0.9em; font-weight: 500; word-break: break-all;";
+          nameEl.textContent = img.filename;
+          info.appendChild(nameEl);
+
+          const sizeEl = document.createElement("div");
+          sizeEl.style.cssText = "font-size: 0.8em; color: #666;";
+          const sizeKb = (img.size / 1024).toFixed(1);
+          const statusBadge = img.inUse ? "🔗 ใช้งาน" : "❌ ไม่ใช้";
+          sizeEl.textContent = `${sizeKb} KB • ${statusBadge}`;
+          info.appendChild(sizeEl);
+          card.appendChild(info);
+
+          if (!img.inUse) {
+            const delBtn = document.createElement("button");
+            delBtn.style.cssText = "width: 100%; padding: 6px; border: none; background: #e8d5c4; color: #8b4513; cursor: pointer; font-size: 0.9em; border-top: 1px solid #ddd;";
+            delBtn.textContent = "🗑️ ลบ";
+            delBtn.addEventListener("click", () => deleteImage(img.filename));
+            card.appendChild(delBtn);
+          }
+
+          list.appendChild(card);
+        });
+      }
+
+      async function deleteImage(filename) {
+        if (!confirm(`ลบ "${filename}"?`)) return;
+        try {
+          await api(`/api/admin/images/${encodeURIComponent(filename)}`, { method: "DELETE" });
+          await loadImages();
+        } catch (e) {
+          alert("ลบไม่สำเร็จ: " + e.message);
+        }
+      }
+
+      document.getElementById("refreshImagesBtn").addEventListener("click", loadImages);
 
       /* ---------- accounts view (บัญชีแอดมิน) ---------- */
       async function loadAccounts() {

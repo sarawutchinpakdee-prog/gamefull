@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { getCells, getCellById, updateCell, getCellTypes, EDITABLE_FIELDS } = require('./store');
+const { getCells, getCellById, updateCell, getCellTypes, EDITABLE_FIELDS, getUploadedImages, deleteImage, getReferencedImages } = require('./store');
 const tourism = require('../data/tourism.json');
 const { requireAuth } = require('./auth');
 
@@ -132,6 +132,26 @@ router.put('/cells/:id', requireAuth, (req, res) => {
 
   const updated = updateCell(req.params.id, patch);
   res.json(updated);
+});
+
+// GET /api/admin/images -> รายการรูปที่อัปโหลด พร้อมสถานะว่าใช้งานอยู่รึเปล่า
+router.get('/admin/images', requireAuth, (req, res) => {
+  const uploaded = getUploadedImages();
+  const referenced = getReferencedImages();
+  const withStatus = uploaded.map(img => ({
+    ...img,
+    inUse: referenced.has(img.url),
+  }));
+  res.json(withStatus);
+});
+
+// DELETE /api/admin/images/:filename -> ลบรูปที่ไม่ใช้แล้ว
+router.delete('/admin/images/:filename', requireAuth, (req, res) => {
+  const filename = String(req.params.filename);
+  if (!deleteImage(filename)) {
+    return res.status(404).json({ error: 'ไม่พบไฟล์นี้ หรือชื่อไฟล์ไม่ถูกต้อง' });
+  }
+  res.json({ ok: true });
 });
 
 module.exports = router;
