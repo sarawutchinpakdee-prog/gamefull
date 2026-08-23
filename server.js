@@ -117,6 +117,42 @@ app.post('/api/admin/rooms/:id/kick', requireAuth, (req, res) => {
   res.json({ ok: true });
 });
 
+// ปรับเงินผู้เล่นกลางเกม — ใช้แก้บั๊ก/ชดเชยปัญหาเทคนิคโดยไม่ต้องปิดทั้งห้อง
+app.post('/api/admin/rooms/:id/adjust-money', requireAuth, (req, res) => {
+  const sid = normalizeRoomId(req.params.id);
+  const session = game.getSession(sid);
+  if (!session) return res.status(404).json({ error: 'ไม่พบห้องนี้' });
+
+  const playerId = String(req.body?.playerId || '');
+  const amount = Number(req.body?.amount);
+  if (!Number.isFinite(amount) || amount === 0) {
+    return res.status(400).json({ error: 'จำนวนเงินต้องเป็นตัวเลขไม่เท่ากับ 0' });
+  }
+  if (Math.abs(amount) > 100000000) {
+    return res.status(400).json({ error: 'จำนวนเงินต้องไม่เกิน 100,000,000' });
+  }
+
+  const player = game.adjustPlayerMoney(session, playerId, amount);
+  if (!player) return res.status(404).json({ error: 'ไม่พบผู้เล่นนี้ในห้อง' });
+
+  game.addLog(session, `👑 แอดมินปรับเงินให้ ${player.name} ${amount >= 0 ? '+' : ''}${amount.toLocaleString()}`);
+  io.to(sid).emit('state_update', game.publicState(session));
+  io.to(sid).emit('gm_log', session.logs[0]);
+  res.json({ ok: true, money: player.money });
+});
+
+// บังคับข้ามตาที่ค้าง (เหมือนกับที่ turn watchdog ทำอัตโนมัติเมื่อ AFK แต่แอดมินสั่งได้ทันที)
+app.post('/api/admin/rooms/:id/force-skip', requireAuth, async (req, res) => {
+  const sid = normalizeRoomId(req.params.id);
+  const session = game.getSession(sid);
+  if (!session) return res.status(404).json({ error: 'ไม่พบห้องนี้' });
+  if (session.gameOver) return res.status(400).json({ error: 'เกมจบแล้ว' });
+
+  clearTurnWatchdog(session);
+  await handleTurnTimeout(session);
+  res.json({ ok: true });
+});
+
 /* ============================================================
    SOCKET.IO — เลเยอร์เกม real-time (คนละส่วนกับ REST admin API
    แต่ใช้ store.js/cells ชุดเดียวกัน — แอดมินแก้ช่องแล้วมีผลกับ

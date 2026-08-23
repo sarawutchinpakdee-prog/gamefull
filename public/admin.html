@@ -1422,11 +1422,25 @@
         info.appendChild(badges);
         head.appendChild(info);
 
+        const headActions = document.createElement("div");
+        headActions.style.cssText = "display: flex; gap: 6px;";
+
+        if (!room.gameOver) {
+          const skipBtn = document.createElement("button");
+          skipBtn.className = "close-room-btn";
+          skipBtn.textContent = "⏭️ ข้ามตา";
+          skipBtn.title = "บังคับข้ามตาปัจจุบัน (เหมือนหมดเวลาอัตโนมัติ)";
+          skipBtn.addEventListener("click", () => forceSkipTurn(room.id));
+          headActions.appendChild(skipBtn);
+        }
+
         const closeBtn = document.createElement("button");
         closeBtn.className = "close-room-btn";
         closeBtn.textContent = "🗑️ ปิดห้อง";
         closeBtn.addEventListener("click", () => closeRoom(room.id));
-        head.appendChild(closeBtn);
+        headActions.appendChild(closeBtn);
+
+        head.appendChild(headActions);
 
         card.appendChild(head);
 
@@ -1452,6 +1466,13 @@
           money.className = "player-money";
           money.textContent = fmtMoney(p.money);
           row.appendChild(money);
+
+          const moneyBtn = document.createElement("button");
+          moneyBtn.className = "kick-btn";
+          moneyBtn.textContent = "💰";
+          moneyBtn.title = "ปรับเงินผู้เล่นนี้";
+          moneyBtn.addEventListener("click", () => adjustMoney(room.id, p.id, p.name));
+          row.appendChild(moneyBtn);
 
           const kickBtn = document.createElement("button");
           kickBtn.className = "kick-btn";
@@ -1486,6 +1507,35 @@
           await loadRooms();
         } catch (e) {
           alert("นำผู้เล่นออกไม่สำเร็จ: " + e.message);
+        }
+      }
+
+      async function adjustMoney(roomId, playerId, playerName) {
+        const input = prompt(`ปรับเงินให้ "${playerName || "ผู้เล่นนี้"}" เท่าไร? (ใส่เลขลบเพื่อหักเงิน เช่น -1000)`);
+        if (input === null) return;
+        const amount = Number(input);
+        if (!Number.isFinite(amount) || amount === 0) {
+          alert("กรุณาใส่ตัวเลขที่ไม่เท่ากับ 0");
+          return;
+        }
+        try {
+          await api(`/api/admin/rooms/${roomId}/adjust-money`, {
+            method: "POST",
+            body: JSON.stringify({ playerId, amount }),
+          });
+          await loadRooms();
+        } catch (e) {
+          alert("ปรับเงินไม่สำเร็จ: " + e.message);
+        }
+      }
+
+      async function forceSkipTurn(roomId) {
+        if (!confirm(`บังคับข้ามตาปัจจุบันในห้อง ${roomId}?`)) return;
+        try {
+          await api(`/api/admin/rooms/${roomId}/force-skip`, { method: "POST" });
+          await loadRooms();
+        } catch (e) {
+          alert("ข้ามตาไม่สำเร็จ: " + e.message);
         }
       }
 

@@ -86,6 +86,15 @@ function kickPlayer(session, socketId) {
   return removed;
 }
 
+// ใช้โดยแอดมินเพื่อปรับเงินผู้เล่นกลางเกม (เช่น แก้บั๊ก/ชดเชยปัญหาเทคนิค) — ไม่แตะสถานะ
+// ล้มละลาย เพราะนั่นผูกกับ flow การเล่น (จ่ายหนี้ไม่ไหว) ไม่ใช่แค่จำนวนเงินในกระเป๋า
+function adjustPlayerMoney(session, socketId, delta) {
+  const player = session.players.find(p => p.socketId === socketId);
+  if (!player) return null;
+  player.money = Math.max(0, (Number(player.money) || 0) + Number(delta));
+  return player;
+}
+
 function publicState(session) {
   const turn = currentPlayer(session);
   const { maxRounds } = getGameSettings();
@@ -1075,7 +1084,7 @@ async function handleRollDice(io, session, socketId) {
 
 module.exports = {
   getSession, createSession, getOrCreateSession, listSessions, deleteSession, kickPlayer, publicState, addPlayer, removePlayerBySocket,
-  buildHistoryRecord,
+  buildHistoryRecord, adjustPlayerMoney,
   handleRollDice, answerQuestion, buyProperty, skipPropertyPurchase, sellProperty, upgradeProperty, transferProperty,
   addLog, currentPlayer, advanceTurn, addBot, isBotPlayer, chooseBotPurchase, botShouldPlay, placeBid,
 };
