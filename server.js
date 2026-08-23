@@ -6,7 +6,9 @@ const { Server } = require('socket.io');
 
 const authRoutes = require('./src/authRoutes');
 const cellRoutes = require('./src/cellRoutes');
+const cardRoutes = require('./src/cardRoutes');
 const game = require('./src/game');
+const { requireAuth } = require('./src/auth');
 
 const app = express();
 const server = http.createServer(app);
@@ -20,7 +22,85 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api', cellRoutes);
+app.use('/api', cardRoutes);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+/* ============================================================
+   ADMIN — มองเห็น/จัดการห้องเกมที่กำลังเล่นอยู่จริง (in-memory sessions)
+   ============================================================ */
+app.get('/api/admin/rooms', requireAuth, (req, res) => {
+  const rooms = game.listSessions()
+    .map(session => ({
+      id: session.id,
+      mode: session.mode,
+      createdAt: session.createdAt || null,
+      gameOver: session.gameOver,
+      winnerName: session.winnerName || null,
+      turnCount: session.turnCount,
+      playerCount: session.players.length,
+      connectedCount: session.players.filter(p => p.connected && !p.isBot).length,
+      players: session.players.map(p => ({
+        id: p.socketId,
+        name: p.name,
+        color: p.color,
+        money: p.money,
+        connected: !!p.connected,
+        bankrupt: !!p.bankrupt,
+        isBot: !!p.isBot,
+      })),
+    }))
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  res.json(rooms);
+});
+
+app.get('/api/admin/rooms/:id', requireAuth, (req, res) => {
+  const session = game.getSession(normalizeRoomId(req.params.id));
+  if (!session) return res.status(404).json({ error: 'ไม่พบห้องนี้' });
+  res.json(game.publicState(session));
+});
+
+app.post('/api/admin/rooms/:id/close', requireAuth, (req, res) => {
+  const sid = normalizeRoomId(req.params.id);
+  const session = game.getSession(sid);
+  if (!session) return res.status(404).json({ error: 'ไม่พบห้องนี้' });
+
+  io.to(sid).emit('error_msg', 'ห้องนี้ถูกปิดโดยแอดมิน');
+  const socketIds = io.sockets.adapter.rooms.get(sid);
+  if (socketIds) {
+    for (const socketId of Array.from(socketIds)) {
+      const sock = io.sockets.sockets.get(socketId);
+      if (sock) sock.disconnect(true);
+    }
+  }
+  clearTurnWatchdog(session);
+  game.deleteSession(sid);
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/rooms/:id/kick', requireAuth, (req, res) => {
+  const sid = normalizeRoomId(req.params.id);
+  const session = game.getSession(sid);
+  if (!session) return res.status(404).json({ error: 'ไม่พบห้องนี้' });
+
+  const playerId = String(req.body?.playerId || '');
+  const player = session.players.find(p => p.socketId === playerId);
+  if (!player) return res.status(404).json({ error: 'ไม่พบผู้เล่นนี้ในห้อง' });
+
+  const sock = io.sockets.sockets.get(playerId);
+  if (sock) sock.emit('error_msg', 'คุณถูกเตะออกจากห้องโดยแอดมิน');
+  game.kickPlayer(session, playerId);
+  game.addLog(session, `👑 แอดมินนำ ${player.name} ออกจากห้อง`);
+  if (sock) sock.disconnect(true);
+
+  if (session.players.length) {
+    io.to(sid).emit('state_update', game.publicState(session));
+    io.to(sid).emit('gm_log', session.logs[0]);
+    scheduleTurnWatchdog(session);
+  } else {
+    game.deleteSession(sid);
+  }
+  res.json({ ok: true });
+});
 
 /* ============================================================
    SOCKET.IO — เลเยอร์เกม real-time (คนละส่วนกับ REST admin API

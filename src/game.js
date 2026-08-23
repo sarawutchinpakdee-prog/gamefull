@@ -1,4 +1,4 @@
-const { getCells, getCellTypes } = require('./store');
+const { getCells, getCellTypes, getQuizCards, getAngelCards } = require('./store');
 
 const BOARD_ID = 'default';
 const PLAYER_COLORS = ['#3B82F6', '#EF4444', '#22C55E', '#F5B841', '#A855F7', '#EC4899'];
@@ -27,6 +27,7 @@ function createSession(sessionId) {
     sessions.set(sessionId, {
       id: sessionId,
       boardId: BOARD_ID,
+      createdAt: Date.now(),
       // { playerKey, socketId, name, color, money, pos, connected }
       players: [],
       turnIndex: 0,
@@ -58,6 +59,37 @@ function getOrCreateSession(sessionId) {
 
 function listSessions() {
   return Array.from(sessions.values());
+}
+
+function deleteSession(sessionId) {
+  return sessions.delete(sessionId);
+}
+
+// ใช้โดยแอดมินเพื่อไล่ผู้เล่น/บอทออกจากห้องแบบถาวร (ต่างจาก removePlayerBySocket
+// ที่แค่ทำเครื่องหมายว่าหลุดการเชื่อมต่อ เพื่อรอง reconnect กลับมาเล่นต่อได้)
+function kickPlayer(session, socketId) {
+  const index = session.players.findIndex(p => p.socketId === socketId);
+  if (index === -1) return null;
+  const wasCurrentTurn = index === session.turnIndex;
+  const [removed] = session.players.splice(index, 1);
+
+  if (session.pendingPurchase?.playerKey === removed.playerKey) session.pendingPurchase = null;
+  if (session.pendingQuestion?.playerKey === removed.playerKey) session.pendingQuestion = null;
+  for (const [cellId, ownerKey] of Object.entries(session.properties)) {
+    if (ownerKey === removed.playerKey) {
+      delete session.properties[cellId];
+      delete session.propertyUpgrades[cellId];
+    }
+  }
+
+  if (index < session.turnIndex) session.turnIndex -= 1;
+  if (session.turnIndex >= session.players.length) session.turnIndex = 0;
+  if (wasCurrentTurn && !session.gameOver && session.players.length) {
+    const cur = session.players[session.turnIndex];
+    if (!cur || !cur.connected || cur.bankrupt) advanceTurn(session);
+  }
+  session.aiCount = session.players.filter(p => p.isBot).length;
+  return removed;
 }
 
 function publicState(session) {
@@ -719,30 +751,6 @@ const EVENT_LINES = [
 // คำถามระดับง่าย — ตอบผิดเสีย 500 บาท, ตอบถูกได้ 300 บาท
 
 // การ์ดนางฟ้า: รางวัลเล็ก ๆ เน้นความสนุก ไม่ทำให้เกมเสียสมดุล
-const ANGEL_CARDS = [
-  { title: 'พรแห่งโชค', text: 'นางฟ้ามอบเงินให้คุณ', money: 500, icon: '😇✨' },
-  { title: 'ปีกแห่งความเร็ว', text: 'คุณได้เดินเพิ่ม 2 ช่อง', steps: 2, icon: '🪽' },
-  { title: 'เกราะนางฟ้า', text: 'ครั้งนี้รับโบนัสเงินทันที', money: 800, icon: '🛡️' },
-  { title: 'โชคดีแห่งร้อยเอ็ด', text: 'ได้รับของขวัญจากชาวเมือง', money: 700, icon: '🌟' },
-  { title: 'ส่วนลดจากนางฟ้า', text: 'รับเงินช่วยเหลือสำหรับการเดินทาง', money: 400, icon: '💎' },
-  { title: 'ก้าวพิเศษ', text: 'นางฟ้าช่วยให้คุณขยับไปข้างหน้า 1 ช่อง', steps: 1, icon: '👼' },
-];
-
-const ROIET_QUIZ_CARDS = [
-  { q: 'จังหวัดร้อยเอ็ดอยู่ในภาคใดของประเทศไทย?', choices: ['ภาคเหนือ', 'ภาคตะวันออกเฉียงเหนือ', 'ภาคใต้', 'ภาคตะวันตก'], answer: 1 },
-  { q: 'จังหวัดร้อยเอ็ดมีทั้งหมดกี่อำเภอ?', choices: ['15 อำเภอ', '18 อำเภอ', '20 อำเภอ', '25 อำเภอ'], answer: 2 },
-  { q: 'หอโหวด 101 ตั้งอยู่ในอำเภอใด?', choices: ['อำเภอเมืองร้อยเอ็ด', 'อำเภอพนมไพร', 'อำเภอโพนทอง', 'อำเภอเสลภูมิ'], answer: 0 },
-  { q: 'บึงพลาญชัยเป็นสถานที่สำคัญของอำเภอใด?', choices: ['อำเภอเมยวดี', 'อำเภอเมืองร้อยเอ็ด', 'อำเภอหนองฮี', 'อำเภอจังหาร'], answer: 1 },
-  { q: 'พระมหาเจดีย์ชัยมงคลอยู่ในอำเภอใด?', choices: ['อำเภอหนองพอก', 'อำเภอเกษตรวิสัย', 'อำเภอเชียงขวัญ', 'อำเภอโพนทราย'], answer: 0 },
-  { q: 'ข้อใดเป็นสถานที่ท่องเที่ยวในจังหวัดร้อยเอ็ด?', choices: ['หอโหวด 101', 'ดอยอินทนนท์', 'สะพานมอญ', 'เกาะพีพี'], answer: 0 },
-  { q: 'อำเภอสุวรรณภูมิเป็นหนึ่งในอำเภอของจังหวัดใด?', choices: ['ร้อยเอ็ด', 'ขอนแก่น', 'อุบลราชธานี', 'บุรีรัมย์'], answer: 0 },
-  { q: 'ข้อใดเป็นชื่ออำเภอของจังหวัดร้อยเอ็ด?', choices: ['หนองพอก', 'ปาย', 'แม่สาย', 'หัวหิน'], answer: 0 },
-  { q: 'จังหวัดร้อยเอ็ดมีสถานที่ท่องเที่ยวชื่อ “หอโหวด 101” ใช่หรือไม่?', choices: ['ใช่', 'ไม่ใช่', 'มีเฉพาะในอดีต', 'ไม่แน่ใจ'], answer: 0 },
-  { q: 'อำเภอพนมไพรเป็นอำเภอหนึ่งของจังหวัดใด?', choices: ['ร้อยเอ็ด', 'นครราชสีมา', 'เลย', 'สุราษฎร์ธานี'], answer: 0 },
-  { q: 'ข้อใดไม่ใช่อำเภอในจังหวัดร้อยเอ็ด?', choices: ['โพธิ์ชัย', 'เมยวดี', 'หนองพอก', 'ปากช่อง'], answer: 3 },
-  { q: 'บึงพลาญชัยเป็นสถานที่ท่องเที่ยวในจังหวัดใด?', choices: ['ร้อยเอ็ด', 'เชียงใหม่', 'ภูเก็ต', 'เพชรบุรี'], answer: 0 },
-];
-
 /**
  * เดินทีละช่อง — server เป็นผู้กำหนดตำแหน่งปลายทางทั้งหมด
  * คืนค่า true เมื่อผ่าน START เพื่อป้องกันการให้โบนัสซ้ำใน resolveCell
@@ -817,10 +825,22 @@ async function resolveCell(io, session, player, context = {}) {
     }
 
     case 'EVENT': {
-      // ช่องเหตุการณ์สุ่มได้ทั้งการ์ดทำโทษและการ์ดนางฟ้า
-      const drawAngel = Math.random() < 0.5;
+      // ช่องเหตุการณ์สุ่มได้ทั้งการ์ดทำโทษและการ์ดนางฟ้า — คลังการ์ดแก้ไขได้จากหน้าแอดมิน (data/cards.json)
+      const quizCards = getQuizCards();
+      const angelCards = getAngelCards();
+      let drawAngel;
+      if (angelCards.length && quizCards.length) drawAngel = Math.random() < 0.5;
+      else if (angelCards.length) drawAngel = true;
+      else if (quizCards.length) drawAngel = false;
+      else {
+        // แอดมินลบการ์ดออกจนหมด: ข้ามเอฟเฟกต์แทนที่จะให้เกมพัง
+        addLog(session, `${player.name} หยุดที่ช่องเหตุการณ์ แต่ยังไม่มีการ์ดในระบบให้จั่ว`);
+        io.to(session.id).emit('gm_log', session.logs[0]);
+        break;
+      }
+
       if (drawAngel) {
-        const card = ANGEL_CARDS[Math.floor(Math.random() * ANGEL_CARDS.length)];
+        const card = angelCards[Math.floor(Math.random() * angelCards.length)];
         player.money += Number(card.money || 0);
         let moved = 0;
         if (card.steps) {
@@ -838,7 +858,7 @@ async function resolveCell(io, session, player, context = {}) {
           steps: moved,
         });
       } else {
-        const card = ROIET_QUIZ_CARDS[Math.floor(Math.random() * ROIET_QUIZ_CARDS.length)];
+        const card = quizCards[Math.floor(Math.random() * quizCards.length)];
         session.pendingQuestion = {
           id: `roiet-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           playerKey: player.playerKey,
@@ -1034,7 +1054,7 @@ async function handleRollDice(io, session, socketId) {
 }
 
 module.exports = {
-  getSession, createSession, getOrCreateSession, listSessions, publicState, addPlayer, removePlayerBySocket,
+  getSession, createSession, getOrCreateSession, listSessions, deleteSession, kickPlayer, publicState, addPlayer, removePlayerBySocket,
   handleRollDice, answerQuestion, buyProperty, skipPropertyPurchase, sellProperty, upgradeProperty, transferProperty,
   addLog, currentPlayer, advanceTurn, addBot, isBotPlayer, chooseBotPurchase, botShouldPlay, placeBid,
 };

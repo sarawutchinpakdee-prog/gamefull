@@ -463,6 +463,279 @@
         margin-top: 8px;
         min-height: 16px;
       }
+
+      /* ---------- Tabs ---------- */
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+      .tab-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid rgba(233, 205, 106, 0.25);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--ivory-dim);
+        font-weight: 700;
+        font-size: 13.5px;
+        cursor: pointer;
+      }
+      .tab-btn.active {
+        background: linear-gradient(180deg, var(--brass-light), var(--brass));
+        color: var(--ink);
+        border-color: transparent;
+      }
+
+      /* ---------- Rooms view ---------- */
+      .rooms-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 14px;
+        font-size: 12.5px;
+        color: var(--ivory-dim);
+      }
+      .rooms-toolbar button {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(233, 205, 106, 0.3);
+        color: var(--ivory);
+        padding: 7px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 12.5px;
+      }
+      .rooms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
+      }
+      .room-card {
+        background: linear-gradient(
+          145deg,
+          rgba(107, 66, 38, 0.98),
+          rgba(62, 39, 22, 0.98)
+        );
+        border: 1px solid rgba(233, 205, 106, 0.28);
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
+      }
+      .room-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .room-id {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+      }
+      .room-meta {
+        font-size: 11.5px;
+        color: var(--ivory-dim);
+        margin-top: 2px;
+      }
+      .room-badges {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+        margin-top: 4px;
+      }
+      .room-badge {
+        font-size: 10.5px;
+        padding: 2px 7px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.12);
+        color: var(--ivory);
+      }
+      .room-badge.over {
+        background: rgba(178, 58, 46, 0.35);
+        color: #ffb4a8;
+      }
+      .close-room-btn {
+        border: 1px solid rgba(255, 180, 168, 0.4);
+        background: rgba(178, 58, 46, 0.18);
+        color: #ffb4a8;
+        border-radius: 8px;
+        padding: 6px 9px;
+        font-size: 11.5px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .close-room-btn:hover {
+        background: rgba(178, 58, 46, 0.32);
+      }
+      .player-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 12.5px;
+      }
+      .player-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .player-name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .player-name.offline {
+        opacity: 0.5;
+        text-decoration: line-through;
+      }
+      .player-money {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 11.5px;
+        color: var(--brass-light);
+      }
+      .kick-btn {
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--ivory);
+        border-radius: 6px;
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+        font-size: 11px;
+        line-height: 1;
+      }
+      .kick-btn:hover {
+        background: rgba(178, 58, 46, 0.4);
+      }
+      .rooms-empty {
+        text-align: center;
+        color: var(--ivory-dim);
+        font-size: 13px;
+        padding: 40px 0;
+      }
+
+      /* ---------- Cards view ---------- */
+      .cards-section {
+        margin-bottom: 26px;
+      }
+      .cards-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+      .cards-section-head h2 {
+        font-family: "Fraunces", serif;
+        font-size: 17px;
+        margin: 0;
+      }
+      .add-card-btn {
+        background: linear-gradient(180deg, var(--brass-light), var(--brass));
+        color: var(--ink);
+        border: none;
+        border-radius: 8px;
+        padding: 7px 12px;
+        font-weight: 700;
+        font-size: 12.5px;
+        cursor: pointer;
+      }
+      .card-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .card-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(233, 205, 106, 0.18);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .card-row-icon {
+        font-size: 20px;
+        flex-shrink: 0;
+      }
+      .card-row-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-row-title {
+        font-size: 13px;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card-row-sub {
+        font-size: 11.5px;
+        color: var(--ivory-dim);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        margin-top: 2px;
+      }
+      .card-row-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .card-row-actions button {
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--ivory);
+        border-radius: 6px;
+        width: 26px;
+        height: 26px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .card-row-actions button.danger:hover {
+        background: rgba(178, 58, 46, 0.4);
+      }
+      .card-row-actions button:not(.danger):hover {
+        background: rgba(233, 205, 106, 0.3);
+      }
+      .cards-empty {
+        color: var(--ivory-dim);
+        font-size: 12.5px;
+        padding: 10px 2px;
+      }
+      .choice-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+      .choice-row input[type="text"] {
+        flex: 1;
+      }
+      .choice-row input[type="radio"] {
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        accent-color: #b8860b;
+      }
+      .choice-row .remove-choice-btn {
+        border: none;
+        background: rgba(178, 58, 46, 0.15);
+        color: #8a3226;
+        border-radius: 6px;
+        width: 24px;
+        height: 24px;
+        cursor: pointer;
+        font-size: 12px;
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
@@ -505,16 +778,120 @@
         <button class="logout-btn" id="logoutBtn">ออกจากระบบ</button>
       </div>
 
-      <div class="board-frame">
-        <div class="board" id="board">
-          <div class="center-note">
-            คลิกที่ช่องรอบกระดานเพื่อแก้ไขรูป / ชื่อ / รายละเอียด
+      <div class="tabs">
+        <button class="tab-btn active" id="tabBoard">🗺️ กระดาน</button>
+        <button class="tab-btn" id="tabRooms">🎮 ห้องเกม</button>
+        <button class="tab-btn" id="tabCards">🃏 การ์ด</button>
+      </div>
+
+      <div id="boardView">
+        <div class="board-frame">
+          <div class="board" id="board">
+            <div class="center-note">
+              คลิกที่ช่องรอบกระดานเพื่อแก้ไขรูป / ชื่อ / รายละเอียด
+            </div>
           </div>
         </div>
+        <div class="hint">
+          แก้ไขได้เฉพาะตอนเข้าสู่ระบบแอดมินเท่านั้น —
+          การเปลี่ยนแปลงบันทึกทันทีที่กด "บันทึก"
+        </div>
       </div>
-      <div class="hint">
-        แก้ไขได้เฉพาะตอนเข้าสู่ระบบแอดมินเท่านั้น —
-        การเปลี่ยนแปลงบันทึกทันทีที่กด "บันทึก"
+
+      <div id="roomsView" style="display: none">
+        <div class="rooms-toolbar">
+          <span id="roomsSummary">กำลังโหลด...</span>
+          <button id="refreshRoomsBtn">🔄 รีเฟรช</button>
+        </div>
+        <div class="rooms-grid" id="roomsGrid"></div>
+      </div>
+
+      <div id="cardsView" style="display: none">
+        <div class="cards-section">
+          <div class="cards-section-head">
+            <h2>🃏 การ์ดทำโทษ (คำถามควิซ)</h2>
+            <button class="add-card-btn" id="addQuizBtn">+ เพิ่มคำถาม</button>
+          </div>
+          <div class="card-list" id="quizList"></div>
+        </div>
+
+        <div class="cards-section">
+          <div class="cards-section-head">
+            <h2>😇 การ์ดนางฟ้า</h2>
+            <button class="add-card-btn" id="addAngelBtn">+ เพิ่มการ์ด</button>
+          </div>
+          <div class="card-list" id="angelList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ QUIZ CARD MODAL ============ -->
+    <div class="modal-backdrop" id="quizModalBackdrop">
+      <div class="modal">
+        <h2 id="quizModalTitle">เพิ่มคำถาม</h2>
+        <div class="sub">ใช้เมื่อผู้เล่นจั่วการ์ดทำโทษที่ช่อง EVENT</div>
+
+        <div class="field">
+          <label>คำถาม</label>
+          <textarea id="q_text" placeholder="เช่น จังหวัดร้อยเอ็ดมีทั้งหมดกี่อำเภอ?"></textarea>
+        </div>
+
+        <div class="field">
+          <label>ตัวเลือก (เลือกวงกลมหน้าข้อที่ถูกต้อง)</label>
+          <div id="q_choicesList"></div>
+          <button type="button" class="upload-btn" id="addChoiceBtn" style="margin-top: 6px">
+            + เพิ่มตัวเลือก
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn cancel" id="quizCancelBtn">ยกเลิก</button>
+          <button class="btn save" id="quizSaveBtn">บันทึก</button>
+        </div>
+        <div class="save-status" id="quizSaveStatus"></div>
+      </div>
+    </div>
+
+    <!-- ============ ANGEL CARD MODAL ============ -->
+    <div class="modal-backdrop" id="angelModalBackdrop">
+      <div class="modal">
+        <h2 id="angelModalTitle">เพิ่มการ์ดนางฟ้า</h2>
+        <div class="sub">ใช้เมื่อผู้เล่นจั่วการ์ดนางฟ้าที่ช่อง EVENT</div>
+
+        <div class="modal-row">
+          <div class="field">
+            <label>ไอคอน (emoji)</label>
+            <input type="text" id="a_icon" placeholder="😇" maxlength="8" />
+          </div>
+          <div class="field">
+            <label>ชื่อการ์ด</label>
+            <input type="text" id="a_title" placeholder="เช่น พรแห่งโชค" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>คำอธิบาย</label>
+          <textarea id="a_text" placeholder="ข้อความที่จะแสดงให้ผู้เล่นเห็น"></textarea>
+        </div>
+
+        <div class="modal-row">
+          <div class="field">
+            <label>เงิน (บาท)</label>
+            <input type="number" id="a_money" step="1" placeholder="0" />
+            <div class="effect-help">+ = รับเงิน, − = เสียเงิน, เว้นว่าง = 0</div>
+          </div>
+          <div class="field">
+            <label>จำนวนช่องเดิน</label>
+            <input type="number" id="a_steps" step="1" min="-12" max="12" placeholder="0" />
+            <div class="effect-help">เดินหน้า/ถอยหลัง เว้นว่าง = ไม่เดิน</div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn cancel" id="angelCancelBtn">ยกเลิก</button>
+          <button class="btn save" id="angelSaveBtn">บันทึก</button>
+        </div>
+        <div class="save-status" id="angelSaveStatus"></div>
       </div>
     </div>
 
@@ -718,6 +1095,7 @@
       document.getElementById("logoutBtn").addEventListener("click", () => {
         TOKEN = null;
         sessionStorage.removeItem("admin_token");
+        stopRoomsPolling();
         document.getElementById("appScreen").style.display = "none";
         document.getElementById("loginScreen").style.display = "flex";
       });
@@ -729,6 +1107,470 @@
         CELL_TYPES = await api("/api/cell-types");
         populateTypeSelect();
         await renderBoard();
+      }
+
+      /* ---------- tabs ---------- */
+      const tabBoard = document.getElementById("tabBoard");
+      const tabRooms = document.getElementById("tabRooms");
+      const tabCards = document.getElementById("tabCards");
+      const boardView = document.getElementById("boardView");
+      const roomsView = document.getElementById("roomsView");
+      const cardsView = document.getElementById("cardsView");
+      let roomsPollTimer = null;
+
+      tabBoard.addEventListener("click", () => switchTab("board"));
+      tabRooms.addEventListener("click", () => switchTab("rooms"));
+      tabCards.addEventListener("click", () => switchTab("cards"));
+
+      function switchTab(tab) {
+        tabBoard.classList.toggle("active", tab === "board");
+        tabRooms.classList.toggle("active", tab === "rooms");
+        tabCards.classList.toggle("active", tab === "cards");
+        boardView.style.display = tab === "board" ? "block" : "none";
+        roomsView.style.display = tab === "rooms" ? "block" : "none";
+        cardsView.style.display = tab === "cards" ? "block" : "none";
+
+        if (tab === "rooms") {
+          loadRooms();
+          roomsPollTimer = setInterval(loadRooms, 4000);
+        } else {
+          stopRoomsPolling();
+        }
+        if (tab === "cards") loadCards();
+      }
+
+      function stopRoomsPolling() {
+        if (roomsPollTimer) {
+          clearInterval(roomsPollTimer);
+          roomsPollTimer = null;
+        }
+      }
+
+      /* ---------- rooms view ---------- */
+      document
+        .getElementById("refreshRoomsBtn")
+        .addEventListener("click", loadRooms);
+
+      function fmtMoney(n) {
+        return (Number(n) || 0).toLocaleString() + " ฿";
+      }
+
+      function fmtAge(ts) {
+        if (!ts) return "";
+        const mins = Math.max(0, Math.round((Date.now() - ts) / 60000));
+        if (mins < 1) return "เพิ่งเปิด";
+        if (mins < 60) return `${mins} นาทีที่แล้ว`;
+        return `${Math.round(mins / 60)} ชม.ที่แล้ว`;
+      }
+
+      async function loadRooms() {
+        const summary = document.getElementById("roomsSummary");
+        try {
+          const rooms = await api("/api/admin/rooms");
+          renderRooms(rooms);
+          summary.textContent = rooms.length
+            ? `${rooms.length} ห้องที่กำลังเปิดอยู่ · อัปเดตอัตโนมัติทุก 4 วินาที`
+            : "ยังไม่มีห้องเกมเปิดอยู่";
+        } catch (e) {
+          summary.textContent = "โหลดรายชื่อห้องไม่สำเร็จ: " + e.message;
+        }
+      }
+
+      function renderRooms(rooms) {
+        const grid = document.getElementById("roomsGrid");
+        grid.innerHTML = "";
+        if (!rooms.length) {
+          grid.innerHTML = '<div class="rooms-empty">ไม่มีห้องเกมที่กำลังเล่นอยู่ตอนนี้</div>';
+          return;
+        }
+        rooms.forEach((room) => grid.appendChild(buildRoomCard(room)));
+      }
+
+      function buildRoomCard(room) {
+        const card = document.createElement("div");
+        card.className = "room-card";
+
+        const head = document.createElement("div");
+        head.className = "room-card-head";
+
+        const info = document.createElement("div");
+        const idEl = document.createElement("div");
+        idEl.className = "room-id";
+        idEl.textContent = room.id;
+        info.appendChild(idEl);
+
+        const meta = document.createElement("div");
+        meta.className = "room-meta";
+        meta.textContent = `${fmtAge(room.createdAt)} · ตาที่ ${room.turnCount ?? 0}`;
+        info.appendChild(meta);
+
+        const badges = document.createElement("div");
+        badges.className = "room-badges";
+        const modeBadge = document.createElement("span");
+        modeBadge.className = "room-badge";
+        modeBadge.textContent = room.mode === "ai" ? "🤖 โหมด AI" : "👥 ผู้เล่นจริง";
+        badges.appendChild(modeBadge);
+        const countBadge = document.createElement("span");
+        countBadge.className = "room-badge";
+        countBadge.textContent = `${room.connectedCount}/${room.playerCount} ออนไลน์`;
+        badges.appendChild(countBadge);
+        if (room.gameOver) {
+          const overBadge = document.createElement("span");
+          overBadge.className = "room-badge over";
+          overBadge.textContent = room.winnerName
+            ? `🏁 จบแล้ว · ${room.winnerName} ชนะ`
+            : "🏁 จบเกมแล้ว";
+          badges.appendChild(overBadge);
+        }
+        info.appendChild(badges);
+        head.appendChild(info);
+
+        const closeBtn = document.createElement("button");
+        closeBtn.className = "close-room-btn";
+        closeBtn.textContent = "🗑️ ปิดห้อง";
+        closeBtn.addEventListener("click", () => closeRoom(room.id));
+        head.appendChild(closeBtn);
+
+        card.appendChild(head);
+
+        room.players.forEach((p) => {
+          const row = document.createElement("div");
+          row.className = "player-row";
+
+          const dot = document.createElement("span");
+          dot.className = "player-dot";
+          dot.style.background = p.color || "#999";
+          row.appendChild(dot);
+
+          const name = document.createElement("span");
+          name.className = "player-name" + (p.connected ? "" : " offline");
+          let label = p.name || "(ไม่มีชื่อ)";
+          if (p.isBot) label += " · AI";
+          if (p.bankrupt) label += " · ล้มละลาย";
+          if (!p.connected && !p.isBot) label += " · หลุดการเชื่อมต่อ";
+          name.textContent = label;
+          row.appendChild(name);
+
+          const money = document.createElement("span");
+          money.className = "player-money";
+          money.textContent = fmtMoney(p.money);
+          row.appendChild(money);
+
+          const kickBtn = document.createElement("button");
+          kickBtn.className = "kick-btn";
+          kickBtn.textContent = "✕";
+          kickBtn.title = p.isBot ? "นำ AI ออกจากห้อง" : "เตะผู้เล่นออกจากห้อง";
+          kickBtn.addEventListener("click", () => kickPlayer(room.id, p.id, p.name));
+          row.appendChild(kickBtn);
+
+          card.appendChild(row);
+        });
+
+        return card;
+      }
+
+      async function closeRoom(roomId) {
+        if (!confirm(`ปิดห้อง ${roomId}? ผู้เล่นทั้งหมดในห้องจะถูกตัดการเชื่อมต่อทันที`)) return;
+        try {
+          await api(`/api/admin/rooms/${roomId}/close`, { method: "POST" });
+          await loadRooms();
+        } catch (e) {
+          alert("ปิดห้องไม่สำเร็จ: " + e.message);
+        }
+      }
+
+      async function kickPlayer(roomId, playerId, playerName) {
+        if (!confirm(`นำ "${playerName || "ผู้เล่นนี้"}" ออกจากห้อง ${roomId}?`)) return;
+        try {
+          await api(`/api/admin/rooms/${roomId}/kick`, {
+            method: "POST",
+            body: JSON.stringify({ playerId }),
+          });
+          await loadRooms();
+        } catch (e) {
+          alert("นำผู้เล่นออกไม่สำเร็จ: " + e.message);
+        }
+      }
+
+      /* ---------- cards view (คำถามควิซ + การ์ดนางฟ้า) ---------- */
+      let ACTIVE_QUIZ_ID = null;
+      let ACTIVE_ANGEL_ID = null;
+
+      async function loadCards() {
+        try {
+          const data = await api("/api/cards");
+          renderQuizList(data.quiz || []);
+          renderAngelList(data.angel || []);
+        } catch (e) {
+          document.getElementById("quizList").innerHTML =
+            `<div class="cards-empty">โหลดไม่สำเร็จ: ${escapeHtml(e.message)}</div>`;
+          document.getElementById("angelList").innerHTML = "";
+        }
+      }
+
+      function escapeHtml(s) {
+        const div = document.createElement("div");
+        div.textContent = String(s ?? "");
+        return div.innerHTML;
+      }
+
+      function renderQuizList(cards) {
+        const list = document.getElementById("quizList");
+        list.innerHTML = "";
+        if (!cards.length) {
+          list.innerHTML = '<div class="cards-empty">ยังไม่มีคำถามในระบบ — เพิ่มอย่างน้อย 1 ข้อเพื่อให้ช่อง EVENT ใช้งานได้</div>';
+          return;
+        }
+        cards.forEach((card) => {
+          const row = document.createElement("div");
+          row.className = "card-row";
+
+          const icon = document.createElement("span");
+          icon.className = "card-row-icon";
+          icon.textContent = "🃏";
+          row.appendChild(icon);
+
+          const body = document.createElement("div");
+          body.className = "card-row-body";
+          const title = document.createElement("div");
+          title.className = "card-row-title";
+          title.textContent = card.q;
+          body.appendChild(title);
+          const sub = document.createElement("div");
+          sub.className = "card-row-sub";
+          const correct = Array.isArray(card.choices) ? card.choices[card.answer] : "";
+          sub.textContent = `${(card.choices || []).length} ตัวเลือก · ตอบถูก: ${correct ?? "-"}`;
+          body.appendChild(sub);
+          row.appendChild(body);
+
+          const actions = document.createElement("div");
+          actions.className = "card-row-actions";
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "✏️";
+          editBtn.title = "แก้ไข";
+          editBtn.addEventListener("click", () => openQuizModal(card));
+          actions.appendChild(editBtn);
+          const delBtn = document.createElement("button");
+          delBtn.className = "danger";
+          delBtn.textContent = "🗑️";
+          delBtn.title = "ลบ";
+          delBtn.addEventListener("click", () => deleteQuizCard(card.id));
+          actions.appendChild(delBtn);
+          row.appendChild(actions);
+
+          list.appendChild(row);
+        });
+      }
+
+      function renderAngelList(cards) {
+        const list = document.getElementById("angelList");
+        list.innerHTML = "";
+        if (!cards.length) {
+          list.innerHTML = '<div class="cards-empty">ยังไม่มีการ์ดนางฟ้าในระบบ</div>';
+          return;
+        }
+        cards.forEach((card) => {
+          const row = document.createElement("div");
+          row.className = "card-row";
+
+          const icon = document.createElement("span");
+          icon.className = "card-row-icon";
+          icon.textContent = card.icon || "😇";
+          row.appendChild(icon);
+
+          const body = document.createElement("div");
+          body.className = "card-row-body";
+          const title = document.createElement("div");
+          title.className = "card-row-title";
+          title.textContent = card.title;
+          body.appendChild(title);
+          const sub = document.createElement("div");
+          sub.className = "card-row-sub";
+          const parts = [];
+          if (card.money) parts.push(fmtMoney(card.money));
+          if (card.steps) parts.push(`เดิน ${card.steps > 0 ? "+" : ""}${card.steps} ช่อง`);
+          sub.textContent = card.text + (parts.length ? " · " + parts.join(" · ") : "");
+          body.appendChild(sub);
+          row.appendChild(body);
+
+          const actions = document.createElement("div");
+          actions.className = "card-row-actions";
+          const editBtn = document.createElement("button");
+          editBtn.textContent = "✏️";
+          editBtn.title = "แก้ไข";
+          editBtn.addEventListener("click", () => openAngelModal(card));
+          actions.appendChild(editBtn);
+          const delBtn = document.createElement("button");
+          delBtn.className = "danger";
+          delBtn.textContent = "🗑️";
+          delBtn.title = "ลบ";
+          delBtn.addEventListener("click", () => deleteAngelCard(card.id));
+          actions.appendChild(delBtn);
+          row.appendChild(actions);
+
+          list.appendChild(row);
+        });
+      }
+
+      /* ---------- quiz modal ---------- */
+      const quizBackdrop = document.getElementById("quizModalBackdrop");
+      const choicesList = document.getElementById("q_choicesList");
+
+      document.getElementById("addQuizBtn").addEventListener("click", () => openQuizModal(null));
+      document.getElementById("quizCancelBtn").addEventListener("click", () => quizBackdrop.classList.remove("open"));
+      quizBackdrop.addEventListener("click", (e) => {
+        if (e.target === quizBackdrop) quizBackdrop.classList.remove("open");
+      });
+
+      function addChoiceRow(text = "", checked = false) {
+        const row = document.createElement("div");
+        row.className = "choice-row";
+
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "q_correct";
+        radio.checked = checked;
+        row.appendChild(radio);
+
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = text;
+        input.placeholder = "ข้อความตัวเลือก";
+        row.appendChild(input);
+
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "remove-choice-btn";
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", () => {
+          if (choicesList.children.length <= 2) return;
+          const wasChecked = radio.checked;
+          row.remove();
+          if (wasChecked && choicesList.firstElementChild) {
+            choicesList.firstElementChild.querySelector('input[type="radio"]').checked = true;
+          }
+        });
+        row.appendChild(removeBtn);
+
+        choicesList.appendChild(row);
+      }
+
+      document.getElementById("addChoiceBtn").addEventListener("click", () => {
+        if (choicesList.children.length >= 6) return;
+        addChoiceRow("", false);
+      });
+
+      function openQuizModal(card) {
+        ACTIVE_QUIZ_ID = card ? card.id : null;
+        document.getElementById("quizModalTitle").textContent = card ? "แก้ไขคำถาม" : "เพิ่มคำถาม";
+        document.getElementById("q_text").value = card ? card.q : "";
+        choicesList.innerHTML = "";
+        if (card && Array.isArray(card.choices)) {
+          card.choices.forEach((c, i) => addChoiceRow(c, i === card.answer));
+        } else {
+          for (let i = 0; i < 4; i++) addChoiceRow("", i === 0);
+        }
+        document.getElementById("quizSaveStatus").textContent = "";
+        quizBackdrop.classList.add("open");
+      }
+
+      document.getElementById("quizSaveBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("quizSaveStatus");
+        const q = document.getElementById("q_text").value.trim();
+        const rows = Array.from(choicesList.children);
+        const choices = rows.map((r) => r.querySelector('input[type="text"]').value.trim());
+        let answer = rows.findIndex((r) => r.querySelector('input[type="radio"]').checked);
+
+        if (!q) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "กรุณากรอกคำถาม"; return; }
+        if (choices.some((c) => !c)) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "กรุณากรอกตัวเลือกให้ครบทุกช่อง"; return; }
+        if (answer === -1) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "กรุณาเลือกคำตอบที่ถูกต้อง"; return; }
+
+        const payload = { q, choices, answer };
+        try {
+          if (ACTIVE_QUIZ_ID) {
+            await api(`/api/cards/quiz/${ACTIVE_QUIZ_ID}`, { method: "PUT", body: JSON.stringify(payload) });
+          } else {
+            await api("/api/cards/quiz", { method: "POST", body: JSON.stringify(payload) });
+          }
+          quizBackdrop.classList.remove("open");
+          await loadCards();
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        }
+      });
+
+      async function deleteQuizCard(id) {
+        if (!confirm("ลบคำถามนี้?")) return;
+        try {
+          await api(`/api/cards/quiz/${id}`, { method: "DELETE" });
+          await loadCards();
+        } catch (e) {
+          alert("ลบไม่สำเร็จ: " + e.message);
+        }
+      }
+
+      /* ---------- angel modal ---------- */
+      const angelBackdrop = document.getElementById("angelModalBackdrop");
+
+      document.getElementById("addAngelBtn").addEventListener("click", () => openAngelModal(null));
+      document.getElementById("angelCancelBtn").addEventListener("click", () => angelBackdrop.classList.remove("open"));
+      angelBackdrop.addEventListener("click", (e) => {
+        if (e.target === angelBackdrop) angelBackdrop.classList.remove("open");
+      });
+
+      function openAngelModal(card) {
+        ACTIVE_ANGEL_ID = card ? card.id : null;
+        document.getElementById("angelModalTitle").textContent = card ? "แก้ไขการ์ดนางฟ้า" : "เพิ่มการ์ดนางฟ้า";
+        document.getElementById("a_icon").value = card ? card.icon || "" : "😇";
+        document.getElementById("a_title").value = card ? card.title : "";
+        document.getElementById("a_text").value = card ? card.text : "";
+        document.getElementById("a_money").value = card && card.money ? card.money : "";
+        document.getElementById("a_steps").value = card && card.steps ? card.steps : "";
+        document.getElementById("angelSaveStatus").textContent = "";
+        angelBackdrop.classList.add("open");
+      }
+
+      document.getElementById("angelSaveBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("angelSaveStatus");
+        const title = document.getElementById("a_title").value.trim();
+        const text = document.getElementById("a_text").value.trim();
+        const icon = document.getElementById("a_icon").value.trim();
+        const moneyRaw = document.getElementById("a_money").value;
+        const stepsRaw = document.getElementById("a_steps").value;
+
+        if (!title) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "กรุณากรอกชื่อการ์ด"; return; }
+        if (!text) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "กรุณากรอกคำอธิบาย"; return; }
+
+        const payload = {
+          title,
+          text,
+          icon,
+          money: moneyRaw === "" ? 0 : Number(moneyRaw),
+          steps: stepsRaw === "" ? 0 : Number(stepsRaw),
+        };
+        try {
+          if (ACTIVE_ANGEL_ID) {
+            await api(`/api/cards/angel/${ACTIVE_ANGEL_ID}`, { method: "PUT", body: JSON.stringify(payload) });
+          } else {
+            await api("/api/cards/angel", { method: "POST", body: JSON.stringify(payload) });
+          }
+          angelBackdrop.classList.remove("open");
+          await loadCards();
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        }
+      });
+
+      async function deleteAngelCard(id) {
+        if (!confirm("ลบการ์ดนี้?")) return;
+        try {
+          await api(`/api/cards/angel/${id}`, { method: "DELETE" });
+          await loadCards();
+        } catch (e) {
+          alert("ลบไม่สำเร็จ: " + e.message);
+        }
       }
 
       /* ---------- auto-login if session token still valid ---------- */
