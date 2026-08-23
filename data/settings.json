@@ -1,7 +1,15 @@
 {
-  "startMoney": 20000,
+  "startMoney": 10000,
   "startBonus": 3000,
   "maxRounds": 16,
   "turnTimeoutSeconds": 45,
-  "auctionDurationSeconds": 5
+  "auctionDurationSeconds": 5,
+  "upgradeCostPercent": 50,
+  "sellBackPercent": 50,
+  "rentMultiplierLv1Percent": 150,
+  "rentMultiplierLv2Percent": 225,
+  "rentMultiplierLv3Percent": 300,
+  "auctionMinBidPercent": 10,
+  "auctionMinIncrementPercent": 5,
+  "aiReservePercent": 25
 }

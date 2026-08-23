@@ -2,7 +2,11 @@
   "admins": [
     {
       "username": "admin1234",
-      "password_hash": "$2b$10$CaKTqvZIJAh3rTstQmfnKO2KNZu../A.YSS5aJ3CHtKmuG9BZfqZi"
+      "password_hash": "$2b$10$QrRvK0piTc1y8Gvqd9DnwuKEyRXwwyD3DOtnKmuqJpBdNZS6eG2I."
+    },
+    {
+      "username": "jayj",
+      "password_hash": "$2b$10$WUwrRWMZLwITCZffE49niuCLc8GKsqm8YOiuyOt9f9EeZZVyANW8y"
     }
   ],
   "cellTypes": {
