@@ -71,6 +71,41 @@ function getAdminByUsername(username) {
   return db.admins.find(a => a.username === username) || null;
 }
 
+// รายชื่อบัญชีแอดมินทั้งหมด (ไม่คืน password_hash ออกไปนอกไฟล์นี้)
+function getAdmins() {
+  const db = readDB();
+  return db.admins.map(a => ({ username: a.username }));
+}
+
+function createAdmin(username, passwordHash) {
+  const db = readDB();
+  if (db.admins.some(a => a.username === username)) return null;
+  const admin = { username, password_hash: passwordHash };
+  db.admins.push(admin);
+  writeDB(db);
+  return { username };
+}
+
+// กันไม่ให้ลบแอดมินคนสุดท้าย ไม่งั้นจะไม่มีใครล็อกอินเข้าระบบได้อีก
+function deleteAdmin(username) {
+  const db = readDB();
+  const idx = db.admins.findIndex(a => a.username === username);
+  if (idx === -1) return { error: 'ไม่พบบัญชีนี้', status: 404 };
+  if (db.admins.length <= 1) return { error: 'ต้องมีบัญชีแอดมินเหลืออย่างน้อย 1 บัญชี', status: 400 };
+  db.admins.splice(idx, 1);
+  writeDB(db);
+  return { ok: true };
+}
+
+function updateAdminPassword(username, passwordHash) {
+  const db = readDB();
+  const admin = db.admins.find(a => a.username === username);
+  if (!admin) return false;
+  admin.password_hash = passwordHash;
+  writeDB(db);
+  return true;
+}
+
 function getCellTypes() {
   const db = readDB();
   return db.cellTypes;
@@ -146,7 +181,7 @@ function updateGameSettings(patch) {
 }
 
 module.exports = {
-  readDB, writeDB, getAdminByUsername, getCellTypes,
+  readDB, writeDB, getAdminByUsername, getAdmins, createAdmin, deleteAdmin, updateAdminPassword, getCellTypes,
   getCells, getCellById, updateCell, EDITABLE_FIELDS,
   getQuizCards, getAngelCards, addCard, updateCard, deleteCard,
   getGameSettings, updateGameSettings, SETTINGS_FIELDS,

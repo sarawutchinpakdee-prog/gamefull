@@ -8,6 +8,7 @@ const authRoutes = require('./src/authRoutes');
 const cellRoutes = require('./src/cellRoutes');
 const cardRoutes = require('./src/cardRoutes');
 const settingsRoutes = require('./src/settingsRoutes');
+const accountRoutes = require('./src/accountRoutes');
 const game = require('./src/game');
 const { requireAuth } = require('./src/auth');
 const { getGameSettings } = require('./src/store');
@@ -26,6 +27,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', cellRoutes);
 app.use('/api', cardRoutes);
 app.use('/api', settingsRoutes);
+app.use('/api', accountRoutes);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 /* ============================================================

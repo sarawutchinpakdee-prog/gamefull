@@ -804,6 +804,7 @@
         <button class="tab-btn" id="tabRooms">🎮 ห้องเกม</button>
         <button class="tab-btn" id="tabCards">🃏 การ์ด</button>
         <button class="tab-btn" id="tabSettings">⚙️ ตั้งค่า</button>
+        <button class="tab-btn" id="tabAccounts">👤 บัญชี</button>
       </div>
 
       <div id="boardView">
@@ -882,6 +883,91 @@
             การเปลี่ยนแปลงมีผลกับเกมที่กำลังเล่นอยู่ทันที (ผู้เล่นที่เข้าห้องอยู่แล้วไม่กระทบเงินที่มีอยู่)
           </div>
         </div>
+      </div>
+
+      <div id="accountsView" style="display: none">
+        <div class="cards-section">
+          <div class="cards-section-head">
+            <h2>👤 บัญชีแอดมิน</h2>
+            <button class="add-card-btn" id="addAccountBtn">+ เพิ่มบัญชี</button>
+          </div>
+          <div class="card-list" id="accountsList"></div>
+        </div>
+
+        <div class="cards-section">
+          <div class="settings-card" style="width: min(420px, 100%); margin: 0">
+            <h2 style="font-family: 'Fraunces', serif; font-size: 17px; margin: 0 0 14px">
+              🔑 เปลี่ยนรหัสผ่านของฉัน
+            </h2>
+            <div class="field">
+              <label>รหัสผ่านเดิม</label>
+              <input type="password" id="pw_current" autocomplete="current-password" />
+            </div>
+            <div class="field">
+              <label>รหัสผ่านใหม่</label>
+              <input type="password" id="pw_new" autocomplete="new-password" />
+            </div>
+            <div class="field">
+              <label>ยืนยันรหัสผ่านใหม่</label>
+              <input type="password" id="pw_confirm" autocomplete="new-password" />
+            </div>
+            <div class="effect-help">อย่างน้อย 8 ตัวอักษร</div>
+            <button class="btn save" id="changePasswordBtn" style="width: 100%; margin-top: 10px">
+              เปลี่ยนรหัสผ่าน
+            </button>
+            <div class="save-status" id="changePasswordStatus"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ ADD ACCOUNT MODAL ============ -->
+    <div class="modal-backdrop" id="accountModalBackdrop">
+      <div class="modal">
+        <h2>เพิ่มบัญชีแอดมิน</h2>
+        <div class="sub">บัญชีแอดมินทุกบัญชีมีสิทธิ์เท่ากัน แก้ไขข้อมูลได้ทุกส่วน</div>
+
+        <div class="field">
+          <label>ชื่อผู้ใช้</label>
+          <input type="text" id="acc_username" placeholder="3-30 ตัวอักษร (a-z, 0-9, . _ -)" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>รหัสผ่าน</label>
+          <input type="password" id="acc_password" placeholder="อย่างน้อย 8 ตัวอักษร" autocomplete="new-password" />
+        </div>
+        <div class="field">
+          <label>ยืนยันรหัสผ่าน</label>
+          <input type="password" id="acc_password_confirm" autocomplete="new-password" />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn cancel" id="accountCancelBtn">ยกเลิก</button>
+          <button class="btn save" id="accountSaveBtn">เพิ่มบัญชี</button>
+        </div>
+        <div class="save-status" id="accountSaveStatus"></div>
+      </div>
+    </div>
+
+    <!-- ============ RESET PASSWORD MODAL ============ -->
+    <div class="modal-backdrop" id="resetModalBackdrop">
+      <div class="modal">
+        <h2>ตั้งรหัสผ่านใหม่</h2>
+        <div class="sub" id="resetModalSub"></div>
+
+        <div class="field">
+          <label>รหัสผ่านใหม่</label>
+          <input type="password" id="reset_password" placeholder="อย่างน้อย 8 ตัวอักษร" autocomplete="new-password" />
+        </div>
+        <div class="field">
+          <label>ยืนยันรหัสผ่าน</label>
+          <input type="password" id="reset_password_confirm" autocomplete="new-password" />
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn cancel" id="resetCancelBtn">ยกเลิก</button>
+          <button class="btn save" id="resetSaveBtn">บันทึก</button>
+        </div>
+        <div class="save-status" id="resetSaveStatus"></div>
       </div>
     </div>
 
@@ -1082,6 +1168,7 @@
     <script>
       const API = ""; // same-origin
       let TOKEN = null;
+      let CURRENT_USERNAME = null;
       let CELL_TYPES = {};
       let ACTIVE_CELL = null;
 
@@ -1154,6 +1241,7 @@
 
       document.getElementById("logoutBtn").addEventListener("click", () => {
         TOKEN = null;
+        CURRENT_USERNAME = null;
         sessionStorage.removeItem("admin_token");
         stopRoomsPolling();
         document.getElementById("appScreen").style.display = "none";
@@ -1161,6 +1249,7 @@
       });
 
       async function enterApp(username) {
+        CURRENT_USERNAME = username;
         document.getElementById("whoAmI").textContent = username;
         document.getElementById("loginScreen").style.display = "none";
         document.getElementById("appScreen").style.display = "block";
@@ -1174,26 +1263,31 @@
       const tabRooms = document.getElementById("tabRooms");
       const tabCards = document.getElementById("tabCards");
       const tabSettings = document.getElementById("tabSettings");
+      const tabAccounts = document.getElementById("tabAccounts");
       const boardView = document.getElementById("boardView");
       const roomsView = document.getElementById("roomsView");
       const cardsView = document.getElementById("cardsView");
       const settingsView = document.getElementById("settingsView");
+      const accountsView = document.getElementById("accountsView");
       let roomsPollTimer = null;
 
       tabBoard.addEventListener("click", () => switchTab("board"));
       tabRooms.addEventListener("click", () => switchTab("rooms"));
       tabCards.addEventListener("click", () => switchTab("cards"));
       tabSettings.addEventListener("click", () => switchTab("settings"));
+      tabAccounts.addEventListener("click", () => switchTab("accounts"));
 
       function switchTab(tab) {
         tabBoard.classList.toggle("active", tab === "board");
         tabRooms.classList.toggle("active", tab === "rooms");
         tabCards.classList.toggle("active", tab === "cards");
         tabSettings.classList.toggle("active", tab === "settings");
+        tabAccounts.classList.toggle("active", tab === "accounts");
         boardView.style.display = tab === "board" ? "block" : "none";
         roomsView.style.display = tab === "rooms" ? "block" : "none";
         cardsView.style.display = tab === "cards" ? "block" : "none";
         settingsView.style.display = tab === "settings" ? "block" : "none";
+        accountsView.style.display = tab === "accounts" ? "block" : "none";
 
         if (tab === "rooms") {
           loadRooms();
@@ -1203,6 +1297,7 @@
         }
         if (tab === "cards") loadCards();
         if (tab === "settings") loadSettings();
+        if (tab === "accounts") loadAccounts();
       }
 
       function stopRoomsPolling() {
@@ -1688,6 +1783,173 @@
         } finally {
           btn.disabled = false;
           btn.textContent = "บันทึกการตั้งค่า";
+        }
+      });
+
+      /* ---------- accounts view (บัญชีแอดมิน) ---------- */
+      async function loadAccounts() {
+        const list = document.getElementById("accountsList");
+        try {
+          const accounts = await api("/api/admin/accounts");
+          renderAccountsList(accounts);
+        } catch (e) {
+          list.innerHTML = `<div class="cards-empty">โหลดไม่สำเร็จ: ${escapeHtml(e.message)}</div>`;
+        }
+      }
+
+      function renderAccountsList(accounts) {
+        const list = document.getElementById("accountsList");
+        list.innerHTML = "";
+        accounts.forEach((acc) => {
+          const row = document.createElement("div");
+          row.className = "card-row";
+
+          const icon = document.createElement("span");
+          icon.className = "card-row-icon";
+          icon.textContent = "👤";
+          row.appendChild(icon);
+
+          const body = document.createElement("div");
+          body.className = "card-row-body";
+          const title = document.createElement("div");
+          title.className = "card-row-title";
+          title.textContent = acc.username + (acc.username === CURRENT_USERNAME ? " (คุณ)" : "");
+          body.appendChild(title);
+          row.appendChild(body);
+
+          const actions = document.createElement("div");
+          actions.className = "card-row-actions";
+          const resetBtn = document.createElement("button");
+          resetBtn.textContent = "🔑";
+          resetBtn.title = "ตั้งรหัสผ่านใหม่";
+          resetBtn.addEventListener("click", () => openResetModal(acc.username));
+          actions.appendChild(resetBtn);
+          if (acc.username !== CURRENT_USERNAME && accounts.length > 1) {
+            const delBtn = document.createElement("button");
+            delBtn.className = "danger";
+            delBtn.textContent = "🗑️";
+            delBtn.title = "ลบบัญชีนี้";
+            delBtn.addEventListener("click", () => deleteAccount(acc.username));
+            actions.appendChild(delBtn);
+          }
+          row.appendChild(actions);
+
+          list.appendChild(row);
+        });
+      }
+
+      async function deleteAccount(username) {
+        if (!confirm(`ลบบัญชีแอดมิน "${username}"?`)) return;
+        try {
+          await api(`/api/admin/accounts/${encodeURIComponent(username)}`, { method: "DELETE" });
+          await loadAccounts();
+        } catch (e) {
+          alert("ลบไม่สำเร็จ: " + e.message);
+        }
+      }
+
+      /* ---------- add account modal ---------- */
+      const accountBackdrop = document.getElementById("accountModalBackdrop");
+
+      document.getElementById("addAccountBtn").addEventListener("click", () => {
+        document.getElementById("acc_username").value = "";
+        document.getElementById("acc_password").value = "";
+        document.getElementById("acc_password_confirm").value = "";
+        document.getElementById("accountSaveStatus").textContent = "";
+        accountBackdrop.classList.add("open");
+      });
+      document.getElementById("accountCancelBtn").addEventListener("click", () => accountBackdrop.classList.remove("open"));
+      accountBackdrop.addEventListener("click", (e) => {
+        if (e.target === accountBackdrop) accountBackdrop.classList.remove("open");
+      });
+
+      document.getElementById("accountSaveBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("accountSaveStatus");
+        const username = document.getElementById("acc_username").value.trim();
+        const password = document.getElementById("acc_password").value;
+        const confirmPassword = document.getElementById("acc_password_confirm").value;
+
+        if (!username) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "กรุณากรอกชื่อผู้ใช้"; return; }
+        if (password.length < 8) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"; return; }
+        if (password !== confirmPassword) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "รหัสผ่านยืนยันไม่ตรงกัน"; return; }
+
+        try {
+          await api("/api/admin/accounts", { method: "POST", body: JSON.stringify({ username, password }) });
+          accountBackdrop.classList.remove("open");
+          await loadAccounts();
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        }
+      });
+
+      /* ---------- reset password modal (ตั้งรหัสผ่านใหม่ให้บัญชีอื่น) ---------- */
+      const resetBackdrop = document.getElementById("resetModalBackdrop");
+      let RESET_TARGET_USERNAME = null;
+
+      function openResetModal(username) {
+        RESET_TARGET_USERNAME = username;
+        document.getElementById("resetModalSub").textContent = `ตั้งรหัสผ่านใหม่ให้บัญชี "${username}"`;
+        document.getElementById("reset_password").value = "";
+        document.getElementById("reset_password_confirm").value = "";
+        document.getElementById("resetSaveStatus").textContent = "";
+        resetBackdrop.classList.add("open");
+      }
+
+      document.getElementById("resetCancelBtn").addEventListener("click", () => resetBackdrop.classList.remove("open"));
+      resetBackdrop.addEventListener("click", (e) => {
+        if (e.target === resetBackdrop) resetBackdrop.classList.remove("open");
+      });
+
+      document.getElementById("resetSaveBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("resetSaveStatus");
+        const password = document.getElementById("reset_password").value;
+        const confirmPassword = document.getElementById("reset_password_confirm").value;
+
+        if (password.length < 8) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"; return; }
+        if (password !== confirmPassword) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "รหัสผ่านยืนยันไม่ตรงกัน"; return; }
+
+        try {
+          await api(`/api/admin/accounts/${encodeURIComponent(RESET_TARGET_USERNAME)}/password`, {
+            method: "PUT",
+            body: JSON.stringify({ newPassword: password }),
+          });
+          resetBackdrop.classList.remove("open");
+          alert(`ตั้งรหัสผ่านใหม่ให้ "${RESET_TARGET_USERNAME}" แล้ว`);
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        }
+      });
+
+      /* ---------- change my own password ---------- */
+      document.getElementById("changePasswordBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("changePasswordStatus");
+        const btn = document.getElementById("changePasswordBtn");
+        const currentPassword = document.getElementById("pw_current").value;
+        const newPassword = document.getElementById("pw_new").value;
+        const confirmPassword = document.getElementById("pw_confirm").value;
+
+        if (!currentPassword) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "กรุณากรอกรหัสผ่านเดิม"; return; }
+        if (newPassword.length < 8) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัวอักษร"; return; }
+        if (newPassword !== confirmPassword) { statusEl.style.color = "#b23a2e"; statusEl.textContent = "รหัสผ่านยืนยันไม่ตรงกัน"; return; }
+
+        btn.disabled = true;
+        try {
+          await api(`/api/admin/accounts/${encodeURIComponent(CURRENT_USERNAME)}/password`, {
+            method: "PUT",
+            body: JSON.stringify({ currentPassword, newPassword }),
+          });
+          statusEl.style.color = "#3f7d53";
+          statusEl.textContent = "เปลี่ยนรหัสผ่านแล้ว ✓";
+          document.getElementById("pw_current").value = "";
+          document.getElementById("pw_new").value = "";
+          document.getElementById("pw_confirm").value = "";
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        } finally {
+          btn.disabled = false;
         }
       });
 
