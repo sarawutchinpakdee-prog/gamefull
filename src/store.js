@@ -148,6 +148,67 @@ function updateCell(id, patch) {
   return cell;
 }
 
+// เพิ่มช่องใหม่ต่อท้ายกระดานเสมอ (position = ตำแหน่งสูงสุด + 1) — ไม่แทรกกลางบอร์ด เพื่อไม่ให้
+// ตำแหน่ง START (position 1, ที่ผู้เล่นใหม่ทุกคนเริ่มยืนอยู่) ขยับเปลี่ยนไปโดยไม่ตั้งใจ
+// row/column เป็นค่าที่คำนวณจาก position ฝั่ง client ตอน render (ดู rowCol() ใน admin.html/play.html)
+// จึงไม่จำเป็นต้องคำนวณให้ถูกต้องที่นี่ เก็บไว้เป็น 0 พอ (ฟิลด์เดิมไม่ได้ใช้ render จริงแล้ว)
+function addCell(boardId, patch) {
+  const db = readDB();
+  const boardCells = db.cells.filter(c => c.board_id === boardId);
+  const maxPosition = boardCells.reduce((max, c) => Math.max(max, Number(c.position) || 0), 0);
+
+  const cell = {
+    id: `cell-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+    board_id: boardId,
+    position: maxPosition + 1,
+    row: 0,
+    column: 0,
+    image_url: '',
+    model_3d_url: '',
+    updated_at: new Date().toISOString(),
+    type: patch.type,
+    name: patch.name || '',
+    description: patch.description || '',
+    price: patch.price ?? null,
+    rent_base: patch.rent_base ?? null,
+    effect_value: patch.effect_value ?? null,
+    effect_steps: patch.effect_steps ?? null,
+    attractions: Array.isArray(patch.attractions) ? patch.attractions : [],
+  };
+  for (const key of EDITABLE_FIELDS) {
+    if (key === 'type') continue; // ตั้งค่าไว้แล้วด้านบน กันถูกเขียนทับด้วย undefined
+    if (Object.prototype.hasOwnProperty.call(patch, key)) cell[key] = patch[key];
+  }
+
+  db.cells.push(cell);
+  writeDB(db);
+  return cell;
+}
+
+// ลบช่อง แล้วเลื่อนตำแหน่งช่องที่อยู่หลังช่องที่ลบทั้งหมดขึ้นมา 1 เพื่อให้ position ยังคงต่อเนื่อง
+// 1..N เสมอ (ระบบเดิน/วนรอบ START ในเกมพึ่งพาความต่อเนื่องนี้) ห้ามลบช่อง START เพราะผู้เล่นใหม่
+// ทุกคนเริ่มที่ position 1 เสมอ (ดู addPlayer/addBot ใน game.js)
+function deleteCell(id) {
+  const db = readDB();
+  const idx = db.cells.findIndex(c => c.id === id);
+  if (idx === -1) return { error: 'ไม่พบช่องนี้', status: 404 };
+
+  const target = db.cells[idx];
+  if (target.type === 'START') return { error: 'ไม่สามารถลบช่อง START ได้', status: 400 };
+
+  const boardCells = db.cells.filter(c => c.board_id === target.board_id);
+  if (boardCells.length <= 4) return { error: 'ต้องมีช่องเหลืออย่างน้อย 4 ช่อง', status: 400 };
+
+  db.cells.splice(idx, 1);
+  for (const c of db.cells) {
+    if (c.board_id === target.board_id && Number(c.position) > Number(target.position)) {
+      c.position = Number(c.position) - 1;
+    }
+  }
+  writeDB(db);
+  return { ok: true };
+}
+
 // กติกาเกมส่วนกลาง (เงินเริ่มต้น, โบนัสผ่าน START ฯลฯ) แก้ได้จากหน้าแอดมิน — ถ้าไฟล์ยังไม่มี/พังจะ
 // fallback มาใช้ค่าเริ่มต้นเหล่านี้แทน กันไม่ให้เกมพังเพราะไฟล์ตั้งค่าหาย
 const DEFAULT_SETTINGS = {
@@ -301,7 +362,7 @@ function importConfig(bundle) {
 
 module.exports = {
   readDB, writeDB, getAdminByUsername, getAdmins, createAdmin, deleteAdmin, updateAdminPassword, getCellTypes,
-  getCells, getCellById, updateCell, EDITABLE_FIELDS,
+  getCells, getCellById, updateCell, addCell, deleteCell, EDITABLE_FIELDS,
   getQuizCards, getAngelCards, addCard, updateCard, deleteCard,
   getGameSettings, updateGameSettings, SETTINGS_FIELDS,
   getUploadedImages, deleteImage, getReferencedImages,

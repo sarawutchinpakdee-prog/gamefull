@@ -2,7 +2,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { getCells, getCellById, updateCell, getCellTypes, EDITABLE_FIELDS, getUploadedImages, deleteImage, getReferencedImages } = require('./store');
+const { getCells, getCellById, updateCell, addCell, deleteCell, getCellTypes, EDITABLE_FIELDS, getUploadedImages, deleteImage, getReferencedImages } = require('./store');
 const tourism = require('../data/tourism.json');
 const { requireAuth } = require('./auth');
 
@@ -82,56 +82,82 @@ router.get('/cells/:id', (req, res) => {
   res.json(cell);
 });
 
+// ใช้ทั้งตอนแก้ไขช่องเดิม (PUT) และสร้างช่องใหม่ (POST) — คืน error string ถ้าไม่ผ่าน หรือ null ถ้าผ่าน
+function validateCellPatch(patch, { requireType } = {}) {
+  const unknownKeys = Object.keys(patch).filter(k => !EDITABLE_FIELDS.includes(k));
+  if (unknownKeys.length) {
+    return `ไม่อนุญาตให้แก้ไขฟิลด์: ${unknownKeys.join(', ')}`;
+  }
+
+  if (requireType && !patch.type) return 'กรุณาเลือกประเภทช่อง';
+  if (patch.type != null && !Object.prototype.hasOwnProperty.call(getCellTypes(), patch.type)) {
+    return 'ประเภทช่องไม่ถูกต้อง';
+  }
+  for (const field of ['price', 'rent_base']) {
+    if (patch[field] != null && (!Number.isFinite(Number(patch[field])) || Number(patch[field]) < 0)) {
+      return `${field === 'price' ? 'ราคา' : 'ค่าเช่า'}ต้องเป็นตัวเลขไม่ติดลบ`;
+    }
+  }
+  if (patch.effect_value != null && !Number.isFinite(Number(patch.effect_value))) {
+    return 'ค่าผลกระทบต้องเป็นตัวเลข';
+  }
+  if (patch.effect_steps != null && (!Number.isInteger(Number(patch.effect_steps)) || Math.abs(Number(patch.effect_steps)) > 24)) {
+    return 'จำนวนช่องเดินต้องเป็นจำนวนเต็ม และไม่เกิน 24 ช่อง';
+  }
+  if (patch.attractions != null) {
+    if (!Array.isArray(patch.attractions)) return 'สถานที่ท่องเที่ยวต้องเป็นรายการ (array)';
+    if (patch.attractions.length > 20) return 'สถานที่ท่องเที่ยวมีได้ไม่เกิน 20 รายการ';
+    if (patch.attractions.some(item => typeof item !== 'string' || item.trim().length === 0 || item.trim().length > 200)) {
+      return 'ชื่อสถานที่ท่องเที่ยวต้องเป็นข้อความ 1-200 ตัวอักษร';
+    }
+  }
+  if (patch.image_url != null) {
+    const imageUrl = String(patch.image_url).trim();
+    if (imageUrl && !(/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('/uploads/'))) {
+      return 'URL รูปภาพต้องเป็น http/https หรือไฟล์ที่อัปโหลดใน /uploads/';
+    }
+    if (imageUrl.length > 1000) return 'URL รูปภาพยาวเกินไป';
+  }
+  for (const field of ['phone', 'facebook', 'line_id', 'website']) {
+    if (patch[field] != null && String(patch[field]).length > 200) {
+      return `${field} ยาวเกินไป (สูงสุด 200 ตัวอักษร)`;
+    }
+  }
+  if (patch.website != null && patch.website.trim() && !/^https?:\/\//i.test(patch.website.trim())) {
+    return 'website ต้องเป็น http/https URL';
+  }
+  return null;
+}
+
 // PUT /api/cells/:id -> แก้ไขช่อง (เฉพาะแอดมินที่ล็อกอินแล้วเท่านั้น)
 router.put('/cells/:id', requireAuth, (req, res) => {
   const existing = getCellById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'ไม่พบช่องนี้' });
 
   const patch = req.body || {};
-  const unknownKeys = Object.keys(patch).filter(k => !EDITABLE_FIELDS.includes(k));
-  if (unknownKeys.length) {
-    return res.status(400).json({ error: `ไม่อนุญาตให้แก้ไขฟิลด์: ${unknownKeys.join(', ')}` });
-  }
-
-  if (patch.type != null && !Object.prototype.hasOwnProperty.call(getCellTypes(), patch.type)) {
-    return res.status(400).json({ error: 'ประเภทช่องไม่ถูกต้อง' });
-  }
-  for (const field of ['price', 'rent_base']) {
-    if (patch[field] != null && (!Number.isFinite(Number(patch[field])) || Number(patch[field]) < 0)) {
-      return res.status(400).json({ error: `${field === 'price' ? 'ราคา' : 'ค่าเช่า'}ต้องเป็นตัวเลขไม่ติดลบ` });
-    }
-  }
-  if (patch.effect_value != null && !Number.isFinite(Number(patch.effect_value))) {
-    return res.status(400).json({ error: 'ค่าผลกระทบต้องเป็นตัวเลข' });
-  }
-  if (patch.effect_steps != null && (!Number.isInteger(Number(patch.effect_steps)) || Math.abs(Number(patch.effect_steps)) > 24)) {
-    return res.status(400).json({ error: 'จำนวนช่องเดินต้องเป็นจำนวนเต็ม และไม่เกิน 24 ช่อง' });
-  }
-  if (patch.attractions != null) {
-    if (!Array.isArray(patch.attractions)) return res.status(400).json({ error: 'สถานที่ท่องเที่ยวต้องเป็นรายการ (array)' });
-    if (patch.attractions.length > 20) return res.status(400).json({ error: 'สถานที่ท่องเที่ยวมีได้ไม่เกิน 20 รายการ' });
-    if (patch.attractions.some(item => typeof item !== 'string' || item.trim().length === 0 || item.trim().length > 200)) {
-      return res.status(400).json({ error: 'ชื่อสถานที่ท่องเที่ยวต้องเป็นข้อความ 1-200 ตัวอักษร' });
-    }
-  }
-  if (patch.image_url != null) {
-    const imageUrl = String(patch.image_url).trim();
-    if (imageUrl && !(/^https?:\/\//i.test(imageUrl) || imageUrl.startsWith('/uploads/'))) {
-      return res.status(400).json({ error: 'URL รูปภาพต้องเป็น http/https หรือไฟล์ที่อัปโหลดใน /uploads/' });
-    }
-    if (imageUrl.length > 1000) return res.status(400).json({ error: 'URL รูปภาพยาวเกินไป' });
-  }
-  for (const field of ['phone', 'facebook', 'line_id', 'website']) {
-    if (patch[field] != null && String(patch[field]).length > 200) {
-      return res.status(400).json({ error: `${field} ยาวเกินไป (สูงสุด 200 ตัวอักษร)` });
-    }
-  }
-  if (patch.website != null && patch.website.trim() && !/^https?:\/\//i.test(patch.website.trim())) {
-    return res.status(400).json({ error: 'website ต้องเป็น http/https URL' });
-  }
+  const error = validateCellPatch(patch);
+  if (error) return res.status(400).json({ error });
 
   const updated = updateCell(req.params.id, patch);
   res.json(updated);
+});
+
+// POST /api/cells -> เพิ่มช่องใหม่ต่อท้ายกระดาน (เฉพาะแอดมิน)
+router.post('/cells', requireAuth, (req, res) => {
+  const patch = req.body || {};
+  const error = validateCellPatch(patch, { requireType: true });
+  if (error) return res.status(400).json({ error });
+
+  const boardId = String(req.body?.board_id || 'default');
+  const created = addCell(boardId, patch);
+  res.status(201).json(created);
+});
+
+// DELETE /api/cells/:id -> ลบช่อง (ห้ามลบ START, ต้องเหลืออย่างน้อย 4 ช่อง)
+router.delete('/cells/:id', requireAuth, (req, res) => {
+  const result = deleteCell(req.params.id);
+  if (result.error) return res.status(result.status || 400).json({ error: result.error });
+  res.json({ ok: true });
 });
 
 // GET /api/admin/images -> รายการรูปที่อัปโหลด พร้อมสถานะว่าใช้งานอยู่รึเปล่า

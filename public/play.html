@@ -2553,11 +2553,19 @@ function tourismPhotoCard(a){
           : "player-" + Date.now() + "-" + Math.random().toString(36).slice(2));
       sessionStorage.setItem(PLAYER_TOKEN_KEY, PLAYER_TOKEN);
 
-      function rowCol(pos) {
-        if (pos <= 7) return { row: 0, col: pos - 1 };
-        if (pos <= 12) return { row: pos - 7, col: 6 };
-        if (pos <= 19) return { row: 6, col: 19 - pos };
-        return { row: 25 - pos, col: 0 };
+      // จัดช่องรอบขอบกระดานสี่เหลี่ยม รองรับจำนวนช่องเท่าไรก็ได้ (แอดมินเพิ่ม/ลบช่องได้)
+      // เท่ากับสูตรเดิมพอดีเมื่อ totalCells = 24
+      function boardSide(totalCells) {
+        return Math.max(2, Math.ceil((totalCells + 4) / 4));
+      }
+
+      function rowCol(pos, totalCells) {
+        const S = boardSide(totalCells);
+        const idx = pos - 1;
+        if (idx < S) return { row: 0, col: idx };
+        if (idx < S + (S - 2)) return { row: idx - S + 1, col: S - 1 };
+        if (idx < S + (S - 2) + S) return { row: S - 1, col: S - 1 - (idx - S - (S - 2)) };
+        return { row: S - 1 - (idx - (S + (S - 2) + S)) - 1, col: 0 };
       }
 
       async function loadBoardData() {
@@ -2750,8 +2758,11 @@ function tourismPhotoCard(a){
       function renderBoard() {
         const board = document.getElementById("board");
         document.querySelectorAll(".cell").forEach((c) => c.remove());
+        const S = boardSide(CELLS.length);
+        board.style.gridTemplateColumns = `repeat(${S}, 1fr)`;
+        board.style.gridTemplateRows = `repeat(${S}, 1fr)`;
         CELLS.sort((a, b) => a.position - b.position).forEach((cell) => {
-          const { row, col } = rowCol(cell.position);
+          const { row, col } = rowCol(cell.position, CELLS.length);
           const meta = CELL_TYPES[cell.type] || {};
           const div = document.createElement("div");
           // ทั้งช่องเป็นพื้นที่กดสำหรับเปิดข้อมูล Popup

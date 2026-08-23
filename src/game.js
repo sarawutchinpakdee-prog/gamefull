@@ -791,18 +791,19 @@ async function moveSteps(io, session, player, steps) {
   const dir = steps > 0 ? 1 : -1;
   const total = Math.abs(steps);
   const { startBonus } = getGameSettings();
+  const totalCells = getCells(session.boardId).length;
   let passedStart = false;
 
   for (let i = 0; i < total; i++) {
     let next = player.pos + dir;
-    if (next > 24) {
+    if (next > totalCells) {
       next = 1;
       passedStart = true;
       player.money += startBonus;
       addLog(session, `🎉 ${player.name} ผ่านจุด START! รับโบนัส ${startBonus.toLocaleString()} บาท`);
     }
     if (next < 1) {
-      next = 24;
+      next = totalCells;
       passedStart = true;
       player.money += startBonus;
       addLog(session, `🎉 ${player.name} ผ่านจุด START ย้อนกลับ! รับโบนัส ${startBonus.toLocaleString()} บาท`);
@@ -843,7 +844,7 @@ async function resolveCell(io, session, player, context = {}) {
 
   switch (cell.type) {
     case 'START':
-      // โบนัสถูกจ่ายใน moveSteps ตอนผ่านจาก 24 -> 1 แล้ว
+      // โบนัสถูกจ่ายใน moveSteps ตอนผ่านช่องสุดท้าย -> 1 แล้ว
       // ไม่จ่ายซ้ำที่นี่อีก
       addLog(session, `${player.name} หยุดที่ START`);
       break;

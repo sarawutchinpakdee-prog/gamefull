@@ -820,7 +820,9 @@
         <div class="hint">
           แก้ไขได้เฉพาะตอนเข้าสู่ระบบแอดมินเท่านั้น —
           การเปลี่ยนแปลงบันทึกทันทีที่กด "บันทึก"
+          · ช่องใหม่จะถูกเพิ่มต่อท้ายกระดานเสมอ
         </div>
+        <button class="btn save" id="addCellBtn" style="margin-top: 10px">+ เพิ่มช่องใหม่</button>
       </div>
 
       <div id="roomsView" style="display: none">
@@ -1249,6 +1251,7 @@
         </div>
 
         <div class="modal-actions">
+          <button class="btn cancel" id="deleteCellBtn" style="background: #b23a2e; color: #fff">🗑️ ลบช่องนี้</button>
           <button class="btn cancel" id="cancelBtn">ยกเลิก</button>
           <button class="btn save" id="saveBtn">บันทึก</button>
         </div>
@@ -1299,11 +1302,19 @@
         return body;
       }
 
-      function rowCol(pos) {
-        if (pos <= 7) return { row: 0, col: pos - 1 };
-        if (pos <= 12) return { row: pos - 7, col: 6 };
-        if (pos <= 19) return { row: 6, col: 19 - pos };
-        return { row: 25 - pos, col: 0 };
+      // จัดช่องรอบขอบกระดานสี่เหลี่ยม (ไม่มีช่องตรงกลาง) รองรับจำนวนช่องเท่าไรก็ได้ ไม่ใช่แค่ 24
+      // เท่ากับสูตรเดิมพอดีเมื่อ totalCells = 24 (S = 7 เหมือน rowCol เวอร์ชันเก่า)
+      function boardSide(totalCells) {
+        return Math.max(2, Math.ceil((totalCells + 4) / 4));
+      }
+
+      function rowCol(pos, totalCells) {
+        const S = boardSide(totalCells);
+        const idx = pos - 1; // 0-based ตำแหน่งตามลำดับเดินรอบขอบ
+        if (idx < S) return { row: 0, col: idx };
+        if (idx < S + (S - 2)) return { row: idx - S + 1, col: S - 1 };
+        if (idx < S + (S - 2) + S) return { row: S - 1, col: S - 1 - (idx - S - (S - 2)) };
+        return { row: S - 1 - (idx - (S + (S - 2) + S)) - 1, col: 0 };
       }
 
       /* ---------- login ---------- */
@@ -2353,10 +2364,13 @@
         document.querySelectorAll(".cell").forEach((c) => c.remove());
 
         const cells = await api("/api/board/default/cells");
+        const S = boardSide(cells.length);
+        board.style.gridTemplateColumns = `repeat(${S}, 1fr)`;
+        board.style.gridTemplateRows = `repeat(${S}, 1fr)`;
         cells
           .sort((a, b) => a.position - b.position)
           .forEach((cell) => {
-            const { row, col } = rowCol(cell.position);
+            const { row, col } = rowCol(cell.position, cells.length);
             const meta = CELL_TYPES[cell.type] || {};
             const div = document.createElement("div");
             div.className = "cell";
@@ -2408,7 +2422,7 @@
         document.getElementById("modalTitle").textContent =
           `แก้ไขช่อง #${cell.position}`;
         document.getElementById("modalSub").textContent =
-          `ตำแหน่ง row ${cell.row}, column ${cell.column}`;
+          `ตำแหน่งที่ ${cell.position} บนกระดาน`;
         document.getElementById("f_name").value = cell.name || "";
         document.getElementById("f_type").value = cell.type;
         document.getElementById("f_image").value = cell.image_url || "";
@@ -2438,8 +2452,54 @@
         document.getElementById("uploadStatus").style.color = "#6b5f45";
         updateImagePreview();
         document.getElementById("saveStatus").textContent = "";
+        document.getElementById("deleteCellBtn").style.display =
+          cell.type === "START" ? "none" : "inline-block";
         backdrop.classList.add("open");
       }
+
+      function openCreateModal() {
+        ACTIVE_CELL = null;
+        document.getElementById("modalTitle").textContent = "เพิ่มช่องใหม่";
+        document.getElementById("modalSub").textContent =
+          "ช่องใหม่จะถูกเพิ่มต่อท้ายกระดานเสมอ";
+        document.getElementById("f_name").value = "";
+        document.getElementById("f_type").value = "PROPERTY";
+        document.getElementById("f_image").value = "";
+        document.getElementById("f_description").value = "";
+        document.getElementById("f_attractions").value = "";
+        document.getElementById("f_price").value = "";
+        document.getElementById("f_rent").value = "";
+        document.getElementById("f_effectValue").value = "";
+        document.getElementById("f_effectSteps").value = "";
+        document.getElementById("f_phone").value = "";
+        document.getElementById("f_line_id").value = "";
+        document.getElementById("f_facebook").value = "";
+        document.getElementById("f_website").value = "";
+        document.getElementById("f_imageFile").value = "";
+        document.getElementById("uploadStatus").textContent =
+          "รองรับ PNG, JPG/JPEG, WebP ขนาดไม่เกิน 5 MB";
+        document.getElementById("uploadStatus").style.color = "#6b5f45";
+        updateImagePreview();
+        document.getElementById("saveStatus").textContent = "";
+        document.getElementById("deleteCellBtn").style.display = "none";
+        backdrop.classList.add("open");
+      }
+
+      document.getElementById("addCellBtn").addEventListener("click", openCreateModal);
+
+      document.getElementById("deleteCellBtn").addEventListener("click", async () => {
+        if (!ACTIVE_CELL) return;
+        if (!confirm(`ลบช่อง "${ACTIVE_CELL.name || ACTIVE_CELL.id}"? การกระทำนี้ย้อนกลับไม่ได้`)) return;
+        const statusEl = document.getElementById("saveStatus");
+        try {
+          await api("/api/cells/" + ACTIVE_CELL.id, { method: "DELETE" });
+          backdrop.classList.remove("open");
+          await renderBoard();
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        }
+      });
 
       document
         .getElementById("f_image")
@@ -2542,10 +2602,17 @@
             facebook: document.getElementById("f_facebook").value.trim(),
             website: document.getElementById("f_website").value.trim(),
           };
-          await api("/api/cells/" + ACTIVE_CELL.id, {
-            method: "PUT",
-            body: JSON.stringify(patch),
-          });
+          if (ACTIVE_CELL) {
+            await api("/api/cells/" + ACTIVE_CELL.id, {
+              method: "PUT",
+              body: JSON.stringify(patch),
+            });
+          } else {
+            await api("/api/cells", {
+              method: "POST",
+              body: JSON.stringify(patch),
+            });
+          }
           statusEl.style.color = "#3f7d53";
           statusEl.textContent = "บันทึกแล้ว ✓ รูปภาพพร้อมใช้ในเกมแล้ว";
           await renderBoard();
