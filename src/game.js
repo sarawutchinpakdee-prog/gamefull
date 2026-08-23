@@ -250,8 +250,9 @@ function chooseBotPurchase(session, player) {
   const cell = getCells(session.boardId).find(c => c.id === pending.cellId);
   if (!cell) return false;
   const price = Math.max(0, Number(cell.price) || 0);
-  // AI ซื้อเมื่อยังเหลือเงินอย่างน้อย 25% ของเงินตั้งต้นหลังซื้อ
-  return price > 0 && player.money - price >= getGameSettings().startMoney * 0.25;
+  // AI ซื้อเมื่อยังเหลือเงินอย่างน้อยเงินสำรองขั้นต่ำ (aiReservePercent) หลังซื้อ
+  const { startMoney, aiReservePercent } = getGameSettings();
+  return price > 0 && player.money - price >= startMoney * (aiReservePercent / 100);
 }
 
 function botShouldPlay(session) {
@@ -479,7 +480,7 @@ function sellProperty(io, session, socketId, cellId) {
   if (session.properties[cell.id] !== player.playerKey) return { error: 'ทรัพย์สินนี้ไม่ใช่ของคุณ' };
 
   const originalPrice = Math.max(0, Number(cell.price) || 0);
-  const sellPrice = Math.floor(originalPrice * 0.5);
+  const sellPrice = Math.floor(originalPrice * (getGameSettings().sellBackPercent / 100));
   delete session.properties[cell.id];
   delete session.propertyUpgrades[cell.id];
   player.money += sellPrice;
@@ -502,15 +503,16 @@ function upgradeProperty(io, session, socketId, cellId) {
   const currentLevel = Math.max(0, Math.min(1, Number(session.propertyUpgrades[cell.id]) || 0));
   if (currentLevel >= 1) return { error: 'ทรัพย์สินนี้อัปเกรดถึงระดับสูงสุดแล้ว' };
 
+  const settings = getGameSettings();
   const basePrice = Math.max(0, Number(cell.price) || 0);
-  const cost = Math.floor(basePrice * 0.5);
+  const cost = Math.floor(basePrice * (settings.upgradeCostPercent / 100));
   if (player.money < cost) return { error: `เงินไม่พออัปเกรด ต้องใช้ ${cost.toLocaleString()} บาท` };
 
   const nextLevel = currentLevel + 1;
   player.money -= cost;
   session.propertyUpgrades[cell.id] = nextLevel;
   const baseRent = Math.max(0, Number(cell.rent_base) || 0);
-  const rent = Math.round(baseRent * 1.5);
+  const rent = Math.round(baseRent * (settings.rentMultiplierLv1Percent / 100));
 
   addLog(session, `🏗️ ${player.name} อัปเกรด "${cell.name}" เป็น Lv.${nextLevel} ค่าใช้จ่าย ${cost.toLocaleString()} บาท — ค่าเช่าใหม่ ${rent.toLocaleString()} บาท`);
   io.to(session.id).emit('property_upgraded', {
@@ -556,7 +558,8 @@ function handlePropertyLanding(io, session, player, cell) {
   const price = Math.max(0, Number(cell.price) || 0);
   const baseRent = Math.max(0, Number(cell.rent_base) || 0);
   const level = Math.max(0, Math.min(3, Number(session.propertyUpgrades[cell.id]) || 0));
-  const rentMultiplier = [1, 1.5, 2.25, 3][level];
+  const { rentMultiplierLv1Percent, rentMultiplierLv2Percent, rentMultiplierLv3Percent } = getGameSettings();
+  const rentMultiplier = [1, rentMultiplierLv1Percent / 100, rentMultiplierLv2Percent / 100, rentMultiplierLv3Percent / 100][level];
   const rent = Math.round(baseRent * rentMultiplier);
   const owner = getPropertyOwner(session, cell.id);
 
@@ -684,9 +687,10 @@ function startAuction(io, session, cellId) {
   const price = Math.max(0, Number(cell.price) || 0);
   if (price <= 0) return;
 
-  const auctionDurationMs = getGameSettings().auctionDurationSeconds * 1000;
-  const minBid = Math.max(50, Math.floor(price * 0.1));
-  const minIncrement = Math.max(50, Math.floor(price * 0.05));
+  const { auctionDurationSeconds, auctionMinBidPercent, auctionMinIncrementPercent } = getGameSettings();
+  const auctionDurationMs = auctionDurationSeconds * 1000;
+  const minBid = Math.max(50, Math.floor(price * (auctionMinBidPercent / 100)));
+  const minIncrement = Math.max(50, Math.floor(price * (auctionMinIncrementPercent / 100)));
   session.pendingAuction = {
     cellId: cell.id,
     cellName: cell.name,

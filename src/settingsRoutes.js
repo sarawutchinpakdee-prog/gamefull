@@ -10,6 +10,14 @@ const LIMITS = {
   maxRounds: { min: 4, max: 60, label: 'จำนวนตาสูงสุด' },
   turnTimeoutSeconds: { min: 10, max: 300, label: 'เวลาต่อตา (วินาที)' },
   auctionDurationSeconds: { min: 3, max: 60, label: 'ระยะเวลาประมูล (วินาที)' },
+  upgradeCostPercent: { min: 10, max: 200, label: 'ค่าใช้จ่ายอัปเกรด (% ของราคาที่ดิน)' },
+  sellBackPercent: { min: 10, max: 100, label: 'ราคาขายคืน (% ของราคาที่ดิน)' },
+  rentMultiplierLv1Percent: { min: 100, max: 500, label: 'ตัวคูณค่าเช่า Lv.1 (%)' },
+  rentMultiplierLv2Percent: { min: 100, max: 500, label: 'ตัวคูณค่าเช่า Lv.2 (%)' },
+  rentMultiplierLv3Percent: { min: 100, max: 500, label: 'ตัวคูณค่าเช่า Lv.3 (%)' },
+  auctionMinBidPercent: { min: 1, max: 100, label: 'ราคาประมูลขั้นต่ำ (% ของราคาที่ดิน)' },
+  auctionMinIncrementPercent: { min: 1, max: 100, label: 'ราคาเพิ่มขั้นต่ำในการประมูล (%)' },
+  aiReservePercent: { min: 0, max: 100, label: 'เงินสำรองขั้นต่ำก่อน AI จะซื้อ (%)' },
 };
 
 // อนุญาตแก้บางฟิลด์ (partial patch) — ฟิลด์ที่ไม่ได้ส่งมาคงค่าเดิมไว้

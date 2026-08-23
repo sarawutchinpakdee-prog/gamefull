@@ -888,6 +888,57 @@
 
         <div class="settings-card">
           <h2 style="font-family: 'Fraunces', serif; font-size: 17px; margin: 0 0 14px">
+            📈 กติกาเศรษฐกิจ (ขั้นสูง)
+          </h2>
+          <div class="field">
+            <label>🏗️ ค่าใช้จ่ายอัปเกรดที่ดิน (% ของราคาที่ดิน)</label>
+            <input type="number" id="s_upgradeCostPercent" min="10" max="200" step="5" />
+            <div class="effect-help">ค่าอัปเกรดที่ดิน = ราคาที่ดิน x เปอร์เซ็นต์นี้ (10 - 200)</div>
+          </div>
+          <div class="field">
+            <label>🏷️ ราคาขายที่ดินคืนธนาคาร (% ของราคาที่ดิน)</label>
+            <input type="number" id="s_sellBackPercent" min="10" max="100" step="5" />
+            <div class="effect-help">ราคาขายคืน = ราคาที่ดิน x เปอร์เซ็นต์นี้ (10 - 100)</div>
+          </div>
+          <div class="field">
+            <label>🏠 ตัวคูณค่าเช่า Lv.1 (%)</label>
+            <input type="number" id="s_rentMultiplierLv1Percent" min="100" max="500" step="5" />
+            <div class="effect-help">ค่าเช่า Lv.1 = ค่าเช่าฐาน x เปอร์เซ็นต์นี้ (100 - 500)</div>
+          </div>
+          <div class="field">
+            <label>🏘️ ตัวคูณค่าเช่า Lv.2 (%)</label>
+            <input type="number" id="s_rentMultiplierLv2Percent" min="100" max="500" step="5" />
+            <div class="effect-help">ค่าเช่า Lv.2 = ค่าเช่าฐาน x เปอร์เซ็นต์นี้ (100 - 500)</div>
+          </div>
+          <div class="field">
+            <label>🏰 ตัวคูณค่าเช่า Lv.3 (%)</label>
+            <input type="number" id="s_rentMultiplierLv3Percent" min="100" max="500" step="5" />
+            <div class="effect-help">ค่าเช่า Lv.3 = ค่าเช่าฐาน x เปอร์เซ็นต์นี้ (100 - 500)</div>
+          </div>
+          <div class="field">
+            <label>🔨 ราคาประมูลขั้นต่ำ (% ของราคาที่ดิน)</label>
+            <input type="number" id="s_auctionMinBidPercent" min="1" max="100" step="1" />
+            <div class="effect-help">ราคาเปิดประมูล = ราคาที่ดิน x เปอร์เซ็นต์นี้ (1 - 100)</div>
+          </div>
+          <div class="field">
+            <label>📈 ราคาเพิ่มขั้นต่ำในการประมูล (%)</label>
+            <input type="number" id="s_auctionMinIncrementPercent" min="1" max="100" step="1" />
+            <div class="effect-help">แต่ละครั้งต้องเสนอราคาเพิ่มอย่างน้อยกี่ % ของราคาที่ดิน (1 - 100)</div>
+          </div>
+          <div class="field">
+            <label>🤖 เงินสำรองขั้นต่ำก่อน AI จะซื้อ (%)</label>
+            <input type="number" id="s_aiReservePercent" min="0" max="100" step="5" />
+            <div class="effect-help">AI จะซื้อที่ดินก็ต่อเมื่อเหลือเงินหลังซื้ออย่างน้อยเงินเริ่มต้น x เปอร์เซ็นต์นี้ (0 - 100)</div>
+          </div>
+
+          <button class="btn save" id="advancedSettingsSaveBtn" style="width: 100%; margin-top: 6px">
+            บันทึกกติกาเศรษฐกิจ
+          </button>
+          <div class="save-status" id="advancedSettingsSaveStatus"></div>
+        </div>
+
+        <div class="settings-card">
+          <h2 style="font-family: 'Fraunces', serif; font-size: 17px; margin: 0 0 14px">
             📦 สำรอง / กู้คืนข้อมูล
           </h2>
           <div class="effect-help" style="margin-bottom: 10px">
@@ -1845,12 +1896,26 @@
         "auctionDurationSeconds",
       ];
 
+      const ADVANCED_SETTINGS_FIELDS = [
+        "upgradeCostPercent",
+        "sellBackPercent",
+        "rentMultiplierLv1Percent",
+        "rentMultiplierLv2Percent",
+        "rentMultiplierLv3Percent",
+        "auctionMinBidPercent",
+        "auctionMinIncrementPercent",
+        "aiReservePercent",
+      ];
+
       async function loadSettings() {
         const statusEl = document.getElementById("settingsSaveStatus");
         statusEl.textContent = "";
         try {
           const settings = await api("/api/settings");
           SETTINGS_FIELDS.forEach((key) => {
+            document.getElementById("s_" + key).value = settings[key];
+          });
+          ADVANCED_SETTINGS_FIELDS.forEach((key) => {
             document.getElementById("s_" + key).value = settings[key];
           });
         } catch (e) {
@@ -1885,6 +1950,35 @@
         } finally {
           btn.disabled = false;
           btn.textContent = "บันทึกการตั้งค่า";
+        }
+      });
+
+      document.getElementById("advancedSettingsSaveBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("advancedSettingsSaveStatus");
+        const btn = document.getElementById("advancedSettingsSaveBtn");
+        const patch = {};
+        ADVANCED_SETTINGS_FIELDS.forEach((key) => {
+          patch[key] = Number(document.getElementById("s_" + key).value);
+        });
+
+        btn.disabled = true;
+        btn.textContent = "กำลังบันทึก...";
+        try {
+          const settings = await api("/api/settings", {
+            method: "PUT",
+            body: JSON.stringify(patch),
+          });
+          ADVANCED_SETTINGS_FIELDS.forEach((key) => {
+            document.getElementById("s_" + key).value = settings[key];
+          });
+          statusEl.style.color = "#3f7d53";
+          statusEl.textContent = "บันทึกแล้ว ✓ มีผลกับเกมที่กำลังเล่นอยู่ทันที";
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "บันทึกกติกาเศรษฐกิจ";
         }
       });
 

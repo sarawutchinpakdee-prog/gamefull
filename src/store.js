@@ -161,6 +161,19 @@ const DEFAULT_SETTINGS = {
   turnTimeoutSeconds: 45,
   // ระยะเวลาการประมูลทรัพย์สินที่ถูกปฏิเสธซื้อ
   auctionDurationSeconds: 5,
+  // ค่าใช้จ่ายอัปเกรดที่ดิน = ราคาที่ดิน x (เปอร์เซ็นต์นี้ / 100)
+  upgradeCostPercent: 50,
+  // ราคาขายที่ดินคืนธนาคาร = ราคาที่ดิน x (เปอร์เซ็นต์นี้ / 100)
+  sellBackPercent: 50,
+  // ตัวคูณค่าเช่าตามระดับอัปเกรด (Lv.0 คูณ 1 เสมอ ไม่ให้แก้ได้ เพราะเป็นค่าเช่าฐาน)
+  rentMultiplierLv1Percent: 150,
+  rentMultiplierLv2Percent: 225,
+  rentMultiplierLv3Percent: 300,
+  // ราคาประมูลขั้นต่ำ/ราคาเพิ่มขั้นต่ำ = ราคาที่ดิน x (เปอร์เซ็นต์นี้ / 100)
+  auctionMinBidPercent: 10,
+  auctionMinIncrementPercent: 5,
+  // AI จะตัดสินใจซื้อที่ดินก็ต่อเมื่อเหลือเงินหลังซื้ออย่างน้อยเงินเริ่มต้น x (เปอร์เซ็นต์นี้ / 100)
+  aiReservePercent: 25,
 };
 
 const SETTINGS_FIELDS = Object.keys(DEFAULT_SETTINGS);
