@@ -1,4 +1,4 @@
-const { getCells, getCellTypes, getQuizCards, getAngelCards, getGameSettings } = require('./store');
+const { getCells, getCellTypes, getQuizCards, getAngelCards, getGameSettings, addGameHistory } = require('./store');
 
 const BOARD_ID = 'default';
 const PLAYER_COLORS = ['#3B82F6', '#EF4444', '#22C55E', '#F5B841', '#A855F7', '#EC4899'];
@@ -332,6 +332,26 @@ function netWorth(session, player) {
   return (Number(player.money) || 0) + propertyValue;
 }
 
+// สร้างบันทึกประวัติเกม (ใช้ทั้งตอนจบเกมตามธรรมชาติ และตอนแอดมินสั่งปิดห้องกลางเกม)
+function buildHistoryRecord(session, reason) {
+  return {
+    id: `${session.id}-${Date.now()}`,
+    sessionId: session.id,
+    startedAt: session.createdAt || null,
+    endedAt: Date.now(),
+    turnCount: session.turnCount || 0,
+    reason,
+    winnerName: session.winnerName || null,
+    players: session.players.map(p => ({
+      name: p.name,
+      money: Number(p.money) || 0,
+      total: netWorth(session, p),
+      bankrupt: !!p.bankrupt,
+      isBot: !!p.isBot,
+    })),
+  };
+}
+
 function checkWinCondition(io, session) {
   if (session.gameOver) return true;
   const active = getActivePlayers(session);
@@ -353,6 +373,7 @@ function checkWinCondition(io, session) {
     reason: 'last_player_standing'
   });
   io.to(session.id).emit('gm_log', session.logs[0]);
+  addGameHistory(buildHistoryRecord(session, 'last_player_standing'));
   return true;
 }
 
@@ -380,6 +401,7 @@ function checkTurnLimit(io, session) {
     reason: 'turn_limit_richest'
   });
   io.to(session.id).emit('gm_log', session.logs[0]);
+  addGameHistory(buildHistoryRecord(session, 'turn_limit_richest'));
   return true;
 }
 
@@ -1053,6 +1075,7 @@ async function handleRollDice(io, session, socketId) {
 
 module.exports = {
   getSession, createSession, getOrCreateSession, listSessions, deleteSession, kickPlayer, publicState, addPlayer, removePlayerBySocket,
+  buildHistoryRecord,
   handleRollDice, answerQuestion, buyProperty, skipPropertyPurchase, sellProperty, upgradeProperty, transferProperty,
   addLog, currentPlayer, advanceTurn, addBot, isBotPlayer, chooseBotPurchase, botShouldPlay, placeBid,
 };

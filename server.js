@@ -11,7 +11,7 @@ const settingsRoutes = require('./src/settingsRoutes');
 const accountRoutes = require('./src/accountRoutes');
 const game = require('./src/game');
 const { requireAuth } = require('./src/auth');
-const { getGameSettings } = require('./src/store');
+const { getGameSettings, addGameHistory, getGameHistory } = require('./src/store');
 
 const app = express();
 const server = http.createServer(app);
@@ -78,8 +78,15 @@ app.post('/api/admin/rooms/:id/close', requireAuth, (req, res) => {
     }
   }
   clearTurnWatchdog(session);
+  if (session.gameStarted && !session.gameOver) {
+    addGameHistory(game.buildHistoryRecord(session, 'admin_closed'));
+  }
   game.deleteSession(sid);
   res.json({ ok: true });
+});
+
+app.get('/api/admin/history', requireAuth, (req, res) => {
+  res.json(getGameHistory());
 });
 
 app.post('/api/admin/rooms/:id/kick', requireAuth, (req, res) => {
@@ -102,6 +109,9 @@ app.post('/api/admin/rooms/:id/kick', requireAuth, (req, res) => {
     io.to(sid).emit('gm_log', session.logs[0]);
     scheduleTurnWatchdog(session);
   } else {
+    if (session.gameStarted && !session.gameOver) {
+      addGameHistory(game.buildHistoryRecord(session, 'admin_closed'));
+    }
     game.deleteSession(sid);
   }
   res.json({ ok: true });

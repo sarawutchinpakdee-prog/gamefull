@@ -806,6 +806,7 @@
         <button class="tab-btn" id="tabSettings">⚙️ ตั้งค่า</button>
         <button class="tab-btn" id="tabAccounts">👤 บัญชี</button>
         <button class="tab-btn" id="tabImages">🖼️ ภาพ</button>
+        <button class="tab-btn" id="tabHistory">📜 ประวัติ</button>
       </div>
 
       <div id="boardView">
@@ -930,6 +931,17 @@
           <button class="add-card-btn" id="refreshImagesBtn">🔄 รีเฟรช</button>
         </div>
         <div id="imagesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;"></div>
+      </div>
+    </div>
+
+    <!-- ============ HISTORY VIEW ============ -->
+    <div id="historyView" style="display: none">
+      <div class="cards-section">
+        <div class="cards-section-head">
+          <h2>📜 ประวัติเกมที่จบแล้ว</h2>
+          <button class="add-card-btn" id="refreshHistoryBtn">🔄 รีเฟรช</button>
+        </div>
+        <div id="historyList"></div>
       </div>
     </div>
 
@@ -1277,12 +1289,14 @@
       const tabSettings = document.getElementById("tabSettings");
       const tabAccounts = document.getElementById("tabAccounts");
       const tabImages = document.getElementById("tabImages");
+      const tabHistory = document.getElementById("tabHistory");
       const boardView = document.getElementById("boardView");
       const roomsView = document.getElementById("roomsView");
       const cardsView = document.getElementById("cardsView");
       const settingsView = document.getElementById("settingsView");
       const accountsView = document.getElementById("accountsView");
       const imagesView = document.getElementById("imagesView");
+      const historyView = document.getElementById("historyView");
       let roomsPollTimer = null;
 
       tabBoard.addEventListener("click", () => switchTab("board"));
@@ -1291,6 +1305,7 @@
       tabSettings.addEventListener("click", () => switchTab("settings"));
       tabAccounts.addEventListener("click", () => switchTab("accounts"));
       tabImages.addEventListener("click", () => switchTab("images"));
+      tabHistory.addEventListener("click", () => switchTab("history"));
 
       function switchTab(tab) {
         tabBoard.classList.toggle("active", tab === "board");
@@ -1299,12 +1314,14 @@
         tabSettings.classList.toggle("active", tab === "settings");
         tabAccounts.classList.toggle("active", tab === "accounts");
         tabImages.classList.toggle("active", tab === "images");
+        tabHistory.classList.toggle("active", tab === "history");
         boardView.style.display = tab === "board" ? "block" : "none";
         roomsView.style.display = tab === "rooms" ? "block" : "none";
         cardsView.style.display = tab === "cards" ? "block" : "none";
         settingsView.style.display = tab === "settings" ? "block" : "none";
         accountsView.style.display = tab === "accounts" ? "block" : "none";
         imagesView.style.display = tab === "images" ? "block" : "none";
+        historyView.style.display = tab === "history" ? "block" : "none";
 
         if (tab === "rooms") {
           loadRooms();
@@ -1316,6 +1333,7 @@
         if (tab === "settings") loadSettings();
         if (tab === "accounts") loadAccounts();
         if (tab === "images") loadImages();
+        if (tab === "history") loadHistory();
       }
 
       function stopRoomsPolling() {
@@ -1873,6 +1891,69 @@
       }
 
       document.getElementById("refreshImagesBtn").addEventListener("click", loadImages);
+
+      /* ---------- history view (ประวัติเกมที่จบแล้ว) ---------- */
+      const HISTORY_REASON_LABEL = {
+        last_player_standing: "ผู้เล่นคนอื่นล้มละลายหมด",
+        turn_limit_richest: "ครบจำนวนตา (คะแนนรวมสูงสุด)",
+        admin_closed: "แอดมินปิดห้องกลางเกม",
+      };
+
+      async function loadHistory() {
+        const list = document.getElementById("historyList");
+        try {
+          const history = await api("/api/admin/history");
+          renderHistoryList(history);
+        } catch (e) {
+          list.innerHTML = `<div class="cards-empty">โหลดไม่สำเร็จ: ${escapeHtml(e.message)}</div>`;
+        }
+      }
+
+      function formatDateTime(ms) {
+        if (!ms) return "-";
+        return new Date(ms).toLocaleString("th-TH");
+      }
+
+      function renderHistoryList(history) {
+        const list = document.getElementById("historyList");
+        list.innerHTML = "";
+        if (history.length === 0) {
+          list.innerHTML = `<div class="cards-empty">ยังไม่มีประวัติเกมที่จบแล้ว</div>`;
+          return;
+        }
+        history.forEach((rec) => {
+          const row = document.createElement("div");
+          row.className = "card-row";
+          row.style.flexDirection = "column";
+          row.style.alignItems = "stretch";
+          row.style.gap = "6px";
+
+          const head = document.createElement("div");
+          head.style.cssText = "display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;";
+          const title = document.createElement("div");
+          title.innerHTML = `<b>🏆 ${escapeHtml(rec.winnerName || "-")}</b> <span style="color:#888; font-size:0.85em;">(${escapeHtml(HISTORY_REASON_LABEL[rec.reason] || rec.reason)})</span>`;
+          head.appendChild(title);
+          const meta = document.createElement("div");
+          meta.style.cssText = "font-size: 0.85em; color: #888;";
+          meta.textContent = `${formatDateTime(rec.startedAt)} → ${formatDateTime(rec.endedAt)} • ${rec.turnCount} ตา`;
+          head.appendChild(meta);
+          row.appendChild(head);
+
+          const players = document.createElement("div");
+          players.style.cssText = "font-size: 0.85em; color: #555; display: flex; flex-wrap: wrap; gap: 10px;";
+          (rec.players || []).forEach((p) => {
+            const span = document.createElement("span");
+            const status = p.bankrupt ? " (ล้มละลาย)" : "";
+            span.textContent = `${p.name}${p.isBot ? " 🤖" : ""}: ฿${p.total.toLocaleString()}${status}`;
+            players.appendChild(span);
+          });
+          row.appendChild(players);
+
+          list.appendChild(row);
+        });
+      }
+
+      document.getElementById("refreshHistoryBtn").addEventListener("click", loadHistory);
 
       /* ---------- accounts view (บัญชีแอดมิน) ---------- */
       async function loadAccounts() {

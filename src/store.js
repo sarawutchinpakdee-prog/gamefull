@@ -5,6 +5,8 @@ const crypto = require('crypto');
 const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
 const CARDS_PATH = path.join(__dirname, '..', 'data', 'cards.json');
 const SETTINGS_PATH = path.join(__dirname, '..', 'data', 'settings.json');
+const HISTORY_PATH = path.join(__dirname, '..', 'data', 'game_history.json');
+const MAX_HISTORY_ENTRIES = 300;
 
 function readDB() {
   const raw = fs.readFileSync(DB_PATH, 'utf-8');
@@ -214,10 +216,34 @@ function getReferencedImages() {
   return urls;
 }
 
+// ประวัติเกมที่จบแล้ว (ทั้งจบตามธรรมชาติและถูกแอดมินปิด) — เก็บล่าสุดไว้ไม่เกิน
+// MAX_HISTORY_ENTRIES รายการ กันไฟล์โตไม่มีที่สิ้นสุด
+function addGameHistory(record) {
+  let list = [];
+  try {
+    list = JSON.parse(fs.readFileSync(HISTORY_PATH, 'utf-8'));
+  } catch (err) {
+    list = [];
+  }
+  list.unshift(record);
+  if (list.length > MAX_HISTORY_ENTRIES) list = list.slice(0, MAX_HISTORY_ENTRIES);
+  fs.writeFileSync(HISTORY_PATH, JSON.stringify(list, null, 2), 'utf-8');
+  return record;
+}
+
+function getGameHistory() {
+  try {
+    return JSON.parse(fs.readFileSync(HISTORY_PATH, 'utf-8'));
+  } catch (err) {
+    return [];
+  }
+}
+
 module.exports = {
   readDB, writeDB, getAdminByUsername, getAdmins, createAdmin, deleteAdmin, updateAdminPassword, getCellTypes,
   getCells, getCellById, updateCell, EDITABLE_FIELDS,
   getQuizCards, getAngelCards, addCard, updateCard, deleteCard,
   getGameSettings, updateGameSettings, SETTINGS_FIELDS,
   getUploadedImages, deleteImage, getReferencedImages,
+  addGameHistory, getGameHistory,
 };
