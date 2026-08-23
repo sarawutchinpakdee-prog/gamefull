@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'db.json');
 const CARDS_PATH = path.join(__dirname, '..', 'data', 'cards.json');
+const SETTINGS_PATH = path.join(__dirname, '..', 'data', 'settings.json');
 
 function readDB() {
   const raw = fs.readFileSync(DB_PATH, 'utf-8');
@@ -109,8 +110,44 @@ function updateCell(id, patch) {
   return cell;
 }
 
+// กติกาเกมส่วนกลาง (เงินเริ่มต้น, โบนัสผ่าน START ฯลฯ) แก้ได้จากหน้าแอดมิน — ถ้าไฟล์ยังไม่มี/พังจะ
+// fallback มาใช้ค่าเริ่มต้นเหล่านี้แทน กันไม่ให้เกมพังเพราะไฟล์ตั้งค่าหาย
+const DEFAULT_SETTINGS = {
+  startMoney: 20000,
+  // เดิมโบนัสผ่าน START เท่ากับทุนตั้งต้นพอดี (20,000) ทำให้ผ่าน START ทุก ~7 ตาก็ได้ทุนคืนเกือบเต็ม
+  // แทบไม่มีใครล้มละลาย เศรษฐกิจในเกมจึงไม่มีความหมาย — ค่าเริ่มต้นจึงลดสัดส่วนลงเหลือ ~15% ของทุนเริ่มเกม
+  startBonus: 3000,
+  // จำกัดจำนวนรอบทั้งโต๊ะ กันเกมค้างไม่จบเมื่อไม่มีใครล้มละลาย — ครบแล้วให้ผู้เล่นทรัพย์สินรวมมากสุดชนะ
+  maxRounds: 16,
+  // เวลาที่ผู้เล่นจริงมีก่อนระบบทอย/ตอบ/ตัดสินใจแทนอัตโนมัติ (กันโต๊ะค้างเมื่อ AFK)
+  turnTimeoutSeconds: 45,
+  // ระยะเวลาการประมูลทรัพย์สินที่ถูกปฏิเสธซื้อ
+  auctionDurationSeconds: 5,
+};
+
+const SETTINGS_FIELDS = Object.keys(DEFAULT_SETTINGS);
+
+function getGameSettings() {
+  try {
+    const raw = fs.readFileSync(SETTINGS_PATH, 'utf-8');
+    return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+  } catch (err) {
+    return { ...DEFAULT_SETTINGS };
+  }
+}
+
+function updateGameSettings(patch) {
+  const current = getGameSettings();
+  for (const key of SETTINGS_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) current[key] = patch[key];
+  }
+  fs.writeFileSync(SETTINGS_PATH, JSON.stringify(current, null, 2), 'utf-8');
+  return current;
+}
+
 module.exports = {
   readDB, writeDB, getAdminByUsername, getCellTypes,
   getCells, getCellById, updateCell, EDITABLE_FIELDS,
   getQuizCards, getAngelCards, addCard, updateCard, deleteCard,
+  getGameSettings, updateGameSettings, SETTINGS_FIELDS,
 };

@@ -1,0 +1,7 @@
+{
+  "startMoney": 20000,
+  "startBonus": 3000,
+  "maxRounds": 16,
+  "turnTimeoutSeconds": 45,
+  "auctionDurationSeconds": 5
+}

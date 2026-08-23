@@ -7,8 +7,10 @@ const { Server } = require('socket.io');
 const authRoutes = require('./src/authRoutes');
 const cellRoutes = require('./src/cellRoutes');
 const cardRoutes = require('./src/cardRoutes');
+const settingsRoutes = require('./src/settingsRoutes');
 const game = require('./src/game');
 const { requireAuth } = require('./src/auth');
+const { getGameSettings } = require('./src/store');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +25,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/api/auth', authRoutes);
 app.use('/api', cellRoutes);
 app.use('/api', cardRoutes);
+app.use('/api', settingsRoutes);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 /* ============================================================
@@ -186,8 +189,6 @@ function scheduleAiTurn(session, delay = 900) {
    ระบบใดคอยเตือน ถ้าไม่ทอย/ไม่ตอบ/ไม่ตัดสินใจซื้อภายในเวลาที่กำหนด
    จะให้ระบบจัดการแทนโดยอัตโนมัติ เพื่อไม่ให้ทั้งโต๊ะรอเก้อ
    ============================================================ */
-const TURN_TIMEOUT_MS = 45000;
-
 function clearTurnWatchdog(session) {
   if (session?.turnWatchdog) {
     clearTimeout(session.turnWatchdog);
@@ -201,7 +202,8 @@ function scheduleTurnWatchdog(session) {
   if (session.gameOver) return;
   const player = game.currentPlayer(session);
   if (!player || player.isBot || !player.connected) return;
-  session.turnWatchdog = setTimeout(() => handleTurnTimeout(session), TURN_TIMEOUT_MS);
+  const timeoutMs = getGameSettings().turnTimeoutSeconds * 1000;
+  session.turnWatchdog = setTimeout(() => handleTurnTimeout(session), timeoutMs);
 }
 
 async function handleTurnTimeout(session) {

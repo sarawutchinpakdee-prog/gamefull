@@ -1,17 +1,11 @@
-const { getCells, getCellTypes, getQuizCards, getAngelCards } = require('./store');
+const { getCells, getCellTypes, getQuizCards, getAngelCards, getGameSettings } = require('./store');
 
 const BOARD_ID = 'default';
 const PLAYER_COLORS = ['#3B82F6', '#EF4444', '#22C55E', '#F5B841', '#A855F7', '#EC4899'];
-const START_MONEY = 20000;
-// เดิมโบนัสผ่าน START เท่ากับทุนตั้งต้นพอดี (20,000) ทำให้ผ่าน START ทุก ~7 ตาก็ได้ทุนคืนเกือบเต็ม
-// แทบไม่มีใครล้มละลาย เศรษฐกิจในเกมจึงไม่มีความหมาย — ลดสัดส่วนลงเหลือ ~15% ของทุนเริ่มเกม
-const START_BONUS = 3000;
 const STEP_DELAY_MS = 200;
 const MAX_CELL_CHAIN = 24;
-// จำกัดจำนวนตาทอยรวมทั้งโต๊ะ กันเกมค้างไม่จบเมื่อไม่มีใครล้มละลาย — ครบแล้วให้ผู้เล่นที่มีทรัพย์สินรวมมากที่สุดชนะ
-const MAX_ROUNDS = 16;
-// ระยะเวลาการประมูลทรัพย์สินที่ถูกปฏิเสธซื้อ (มิลลิวินาที)
-const AUCTION_DURATION_MS = 5000;
+// เงินเริ่มต้น, โบนัสผ่าน START, จำนวนตาสูงสุด และเวลาประมูล แก้ได้จากหน้าแอดมิน
+// (data/settings.json ผ่าน getGameSettings()) ไม่ใช่ค่าคงที่ในโค้ดอีกต่อไป
 
 // sessionId -> session state (ทั้งหมดอยู่ใน memory — เหมาะกับโต๊ะเกมสั้นๆ)
 const sessions = new Map();
@@ -94,6 +88,7 @@ function kickPlayer(session, socketId) {
 
 function publicState(session) {
   const turn = currentPlayer(session);
+  const { maxRounds } = getGameSettings();
   return {
     sessionId: session.id,
     boardId: session.boardId,
@@ -117,8 +112,8 @@ function publicState(session) {
     }).sort((a, b) => b.total - a.total),
     turnPlayerId: turn ? turn.socketId : null,
     turnCount: session.turnCount,
-    round: Math.min(MAX_ROUNDS, Math.floor(session.turnCount / Math.max(session.players.filter(p => p.connected && !p.bankrupt).length, 1)) + 1),
-    maxRounds: MAX_ROUNDS,
+    round: Math.min(maxRounds, Math.floor(session.turnCount / Math.max(session.players.filter(p => p.connected && !p.bankrupt).length, 1)) + 1),
+    maxRounds,
     isMoving: session.isMoving,
     gameOver: session.gameOver,
     winnerId: session.winnerKey ? (session.players.find(p => p.playerKey === session.winnerKey)?.socketId || null) : null,
@@ -204,7 +199,7 @@ function addPlayer(session, socketId, name, playerKey) {
     socketId,
     name: (name || `ผู้เล่น ${session.players.length + 1}`).trim().slice(0, 20),
     color,
-    money: START_MONEY,
+    money: getGameSettings().startMoney,
     pos: 1,
     connected: true,
     bankrupt: false,
@@ -223,7 +218,7 @@ function addBot(session, name) {
     socketId: `bot-${session.id}-${botIndex}`,
     name: name || `AI ${botIndex}`,
     color,
-    money: START_MONEY,
+    money: getGameSettings().startMoney,
     pos: 1,
     connected: true,
     bankrupt: false,
@@ -247,7 +242,7 @@ function chooseBotPurchase(session, player) {
   if (!cell) return false;
   const price = Math.max(0, Number(cell.price) || 0);
   // AI ซื้อเมื่อยังเหลือเงินอย่างน้อย 25% ของเงินตั้งต้นหลังซื้อ
-  return price > 0 && player.money - price >= START_MONEY * 0.25;
+  return price > 0 && player.money - price >= getGameSettings().startMoney * 0.25;
 }
 
 function botShouldPlay(session) {
@@ -365,8 +360,9 @@ function checkWinCondition(io, session) {
 // (เช่น เศรษฐกิจสมดุลเกินไป) ให้ผู้เล่นที่มีทรัพย์สินรวม (เงิน + ราคาที่ดิน) มากที่สุดชนะแทน
 function checkTurnLimit(io, session) {
   if (session.gameOver) return false;
+  const { maxRounds } = getGameSettings();
   const activeCount = Math.max(getActivePlayers(session).length, 1);
-  const maxTurns = MAX_ROUNDS * activeCount;
+  const maxTurns = maxRounds * activeCount;
   if ((session.turnCount || 0) < maxTurns) return false;
 
   const active = getActivePlayers(session);
@@ -377,7 +373,7 @@ function checkTurnLimit(io, session) {
   session.winnerKey = winner.playerKey;
   session.winnerName = winner.name;
   session.pendingPurchase = null;
-  addLog(session, `🏆 ครบ ${MAX_ROUNDS} รอบแล้ว — ${winner.name} ชนะเกมด้วยคะแนนรวม ฿${netWorth(session, winner).toLocaleString()}`);
+  addLog(session, `🏆 ครบ ${maxRounds} รอบแล้ว — ${winner.name} ชนะเกมด้วยคะแนนรวม ฿${netWorth(session, winner).toLocaleString()}`);
   io.to(session.id).emit('game_over', {
     winnerId: winner.socketId,
     winnerName: winner.name,
@@ -657,6 +653,7 @@ function startAuction(io, session, cellId) {
   const price = Math.max(0, Number(cell.price) || 0);
   if (price <= 0) return;
 
+  const auctionDurationMs = getGameSettings().auctionDurationSeconds * 1000;
   const minBid = Math.max(50, Math.floor(price * 0.1));
   const minIncrement = Math.max(50, Math.floor(price * 0.05));
   session.pendingAuction = {
@@ -667,14 +664,14 @@ function startAuction(io, session, cellId) {
     minIncrement,
     currentBid: 0,
     currentBidderKey: null,
-    endsAt: Date.now() + AUCTION_DURATION_MS,
+    endsAt: Date.now() + auctionDurationMs,
   };
 
-  addLog(session, `🔨 เปิดประมูล "${cell.name}" เริ่มต้นที่ ฿${minBid.toLocaleString()} (${Math.round(AUCTION_DURATION_MS / 1000)} วินาที)`);
+  addLog(session, `🔨 เปิดประมูล "${cell.name}" เริ่มต้นที่ ฿${minBid.toLocaleString()} (${Math.round(auctionDurationMs / 1000)} วินาที)`);
   io.to(session.id).emit('auction_start', publicAuction(session));
   io.to(session.id).emit('gm_log', session.logs[0]);
 
-  setTimeout(() => resolveAuction(io, session, cell.id), AUCTION_DURATION_MS);
+  setTimeout(() => resolveAuction(io, session, cell.id), auctionDurationMs);
 }
 
 function placeBid(io, session, socketId, amount) {
@@ -758,6 +755,7 @@ const EVENT_LINES = [
 async function moveSteps(io, session, player, steps) {
   const dir = steps > 0 ? 1 : -1;
   const total = Math.abs(steps);
+  const { startBonus } = getGameSettings();
   let passedStart = false;
 
   for (let i = 0; i < total; i++) {
@@ -765,14 +763,14 @@ async function moveSteps(io, session, player, steps) {
     if (next > 24) {
       next = 1;
       passedStart = true;
-      player.money += START_BONUS;
-      addLog(session, `🎉 ${player.name} ผ่านจุด START! รับโบนัส ${START_BONUS.toLocaleString()} บาท`);
+      player.money += startBonus;
+      addLog(session, `🎉 ${player.name} ผ่านจุด START! รับโบนัส ${startBonus.toLocaleString()} บาท`);
     }
     if (next < 1) {
       next = 24;
       passedStart = true;
-      player.money += START_BONUS;
-      addLog(session, `🎉 ${player.name} ผ่านจุด START ย้อนกลับ! รับโบนัส ${START_BONUS.toLocaleString()} บาท`);
+      player.money += startBonus;
+      addLog(session, `🎉 ${player.name} ผ่านจุด START ย้อนกลับ! รับโบนัส ${startBonus.toLocaleString()} บาท`);
     }
 
     player.pos = next;

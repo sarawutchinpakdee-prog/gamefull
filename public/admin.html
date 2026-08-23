@@ -736,6 +736,27 @@
         font-size: 12px;
         flex-shrink: 0;
       }
+
+      /* ---------- Settings view ---------- */
+      .settings-card {
+        width: min(480px, 100%);
+        margin: 0 auto;
+        background: linear-gradient(
+          145deg,
+          rgba(107, 66, 38, 0.98),
+          rgba(62, 39, 22, 0.98)
+        );
+        border: 1px solid rgba(233, 205, 106, 0.28);
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+      }
+      .settings-card .field label {
+        color: var(--brass-light);
+      }
+      .settings-card .effect-help {
+        color: var(--ivory-dim);
+      }
     </style>
   </head>
   <body>
@@ -782,6 +803,7 @@
         <button class="tab-btn active" id="tabBoard">🗺️ กระดาน</button>
         <button class="tab-btn" id="tabRooms">🎮 ห้องเกม</button>
         <button class="tab-btn" id="tabCards">🃏 การ์ด</button>
+        <button class="tab-btn" id="tabSettings">⚙️ ตั้งค่า</button>
       </div>
 
       <div id="boardView">
@@ -821,6 +843,44 @@
             <button class="add-card-btn" id="addAngelBtn">+ เพิ่มการ์ด</button>
           </div>
           <div class="card-list" id="angelList"></div>
+        </div>
+      </div>
+
+      <div id="settingsView" style="display: none">
+        <div class="settings-card">
+          <div class="field">
+            <label>💰 เงินเริ่มต้น (บาท)</label>
+            <input type="number" id="s_startMoney" min="1000" max="200000" step="100" />
+            <div class="effect-help">เงินที่ผู้เล่นแต่ละคนได้ตอนเริ่มเกม (1,000 - 200,000)</div>
+          </div>
+          <div class="field">
+            <label>🎉 โบนัสผ่าน START (บาท)</label>
+            <input type="number" id="s_startBonus" min="0" max="50000" step="100" />
+            <div class="effect-help">เงินที่ได้ทุกครั้งที่เดินผ่าน/ครบรอบช่อง START (0 - 50,000)</div>
+          </div>
+          <div class="field">
+            <label>🏁 จำนวนตาสูงสุดต่อผู้เล่น</label>
+            <input type="number" id="s_maxRounds" min="4" max="60" step="1" />
+            <div class="effect-help">ถ้าครบแล้วยังไม่มีใครล้มละลาย ผู้เล่นทรัพย์สินรวมมากสุดชนะ (4 - 60)</div>
+          </div>
+          <div class="field">
+            <label>⏱️ เวลาต่อตาของผู้เล่นจริง (วินาที)</label>
+            <input type="number" id="s_turnTimeoutSeconds" min="10" max="300" step="5" />
+            <div class="effect-help">ถ้าไม่ทอย/ไม่ตอบ/ไม่ตัดสินใจภายในเวลานี้ ระบบจะทำแทนอัตโนมัติ (10 - 300)</div>
+          </div>
+          <div class="field">
+            <label>🔨 ระยะเวลาประมูล (วินาที)</label>
+            <input type="number" id="s_auctionDurationSeconds" min="3" max="60" step="1" />
+            <div class="effect-help">เวลาเปิดประมูลที่ดินที่ถูกปฏิเสธซื้อ (3 - 60)</div>
+          </div>
+
+          <button class="btn save" id="settingsSaveBtn" style="width: 100%; margin-top: 6px">
+            บันทึกการตั้งค่า
+          </button>
+          <div class="save-status" id="settingsSaveStatus"></div>
+          <div class="effect-help" style="text-align: center; margin-top: 4px">
+            การเปลี่ยนแปลงมีผลกับเกมที่กำลังเล่นอยู่ทันที (ผู้เล่นที่เข้าห้องอยู่แล้วไม่กระทบเงินที่มีอยู่)
+          </div>
         </div>
       </div>
     </div>
@@ -1113,22 +1173,27 @@
       const tabBoard = document.getElementById("tabBoard");
       const tabRooms = document.getElementById("tabRooms");
       const tabCards = document.getElementById("tabCards");
+      const tabSettings = document.getElementById("tabSettings");
       const boardView = document.getElementById("boardView");
       const roomsView = document.getElementById("roomsView");
       const cardsView = document.getElementById("cardsView");
+      const settingsView = document.getElementById("settingsView");
       let roomsPollTimer = null;
 
       tabBoard.addEventListener("click", () => switchTab("board"));
       tabRooms.addEventListener("click", () => switchTab("rooms"));
       tabCards.addEventListener("click", () => switchTab("cards"));
+      tabSettings.addEventListener("click", () => switchTab("settings"));
 
       function switchTab(tab) {
         tabBoard.classList.toggle("active", tab === "board");
         tabRooms.classList.toggle("active", tab === "rooms");
         tabCards.classList.toggle("active", tab === "cards");
+        tabSettings.classList.toggle("active", tab === "settings");
         boardView.style.display = tab === "board" ? "block" : "none";
         roomsView.style.display = tab === "rooms" ? "block" : "none";
         cardsView.style.display = tab === "cards" ? "block" : "none";
+        settingsView.style.display = tab === "settings" ? "block" : "none";
 
         if (tab === "rooms") {
           loadRooms();
@@ -1137,6 +1202,7 @@
           stopRoomsPolling();
         }
         if (tab === "cards") loadCards();
+        if (tab === "settings") loadSettings();
       }
 
       function stopRoomsPolling() {
@@ -1572,6 +1638,58 @@
           alert("ลบไม่สำเร็จ: " + e.message);
         }
       }
+
+      /* ---------- settings view (กติกาเกมส่วนกลาง) ---------- */
+      const SETTINGS_FIELDS = [
+        "startMoney",
+        "startBonus",
+        "maxRounds",
+        "turnTimeoutSeconds",
+        "auctionDurationSeconds",
+      ];
+
+      async function loadSettings() {
+        const statusEl = document.getElementById("settingsSaveStatus");
+        statusEl.textContent = "";
+        try {
+          const settings = await api("/api/settings");
+          SETTINGS_FIELDS.forEach((key) => {
+            document.getElementById("s_" + key).value = settings[key];
+          });
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = "โหลดการตั้งค่าไม่สำเร็จ: " + e.message;
+        }
+      }
+
+      document.getElementById("settingsSaveBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("settingsSaveStatus");
+        const btn = document.getElementById("settingsSaveBtn");
+        const patch = {};
+        SETTINGS_FIELDS.forEach((key) => {
+          patch[key] = Number(document.getElementById("s_" + key).value);
+        });
+
+        btn.disabled = true;
+        btn.textContent = "กำลังบันทึก...";
+        try {
+          const settings = await api("/api/settings", {
+            method: "PUT",
+            body: JSON.stringify(patch),
+          });
+          SETTINGS_FIELDS.forEach((key) => {
+            document.getElementById("s_" + key).value = settings[key];
+          });
+          statusEl.style.color = "#3f7d53";
+          statusEl.textContent = "บันทึกแล้ว ✓ มีผลกับเกมที่กำลังเล่นอยู่ทันที";
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = e.message;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "บันทึกการตั้งค่า";
+        }
+      });
 
       /* ---------- auto-login if session token still valid ---------- */
       (async function tryResume() {
