@@ -2745,7 +2745,7 @@ function tourismPhotoCard(a){
         const contactDefs = [
           { key: 'phone',    icon: '📱', label: 'โทรศัพท์', href: v => `tel:${v}` },
           { key: 'line_id',  icon: '💬', label: 'Line',      href: v => `https://line.me/R/ti/p/${encodeURIComponent(v)}` },
-          { key: 'facebook', icon: '👥', label: 'Facebook',  href: v => v.startsWith('http') ? v : `https://facebook.com/${encodeURIComponent(v)}` },
+          { key: 'facebook', icon: '👥', label: 'Facebook',  href: v => v.startsWith('http') ? v : `https://www.facebook.com/search/pages/?q=${encodeURIComponent(v)}` },
           { key: 'website',  icon: '🌐', label: 'เว็บไซต์',  href: v => v },
         ];
         contactGrid2.innerHTML = '';
@@ -3618,7 +3618,7 @@ function tourismPhotoCard(a){
         const contacts = [
           { key: 'phone',    icon: '📱', label: 'โทรศัพท์', href: v => `tel:${v}` },
           { key: 'line_id',  icon: '💬', label: 'Line',      href: v => `https://line.me/R/ti/p/${encodeURIComponent(v)}` },
-          { key: 'facebook', icon: '👥', label: 'Facebook',  href: v => v.startsWith('http') ? v : `https://facebook.com/${encodeURIComponent(v)}` },
+          { key: 'facebook', icon: '👥', label: 'Facebook',  href: v => v.startsWith('http') ? v : `https://www.facebook.com/search/pages/?q=${encodeURIComponent(v)}` },
           { key: 'website',  icon: '🌐', label: 'เว็บไซต์',  href: v => v },
         ];
         contactGrid.innerHTML = '';

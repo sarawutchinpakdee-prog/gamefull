@@ -39,6 +39,14 @@ app.use('/api', settingsRoutes);
 app.use('/api', accountRoutes);
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
+// สั่งรีสตาร์ทเซิร์ฟเวอร์ — คืนค่าทันทีแล้ว exit ด้วยโค้ดพิเศษให้ supervisor.js สั่งรันใหม่
+// (ล้าง in-memory state ทั้งหมด เช่น login lockout, game session ที่ค้าง)
+const RESTART_EXIT_CODE = 75;
+app.post('/api/admin/restart', requireAuth, (req, res) => {
+  res.json({ ok: true, message: 'กำลังรีสตาร์ทเซิร์ฟเวอร์...' });
+  setTimeout(() => process.exit(RESTART_EXIT_CODE), 200);
+});
+
 /* ============================================================
    ADMIN — มองเห็น/จัดการห้องเกมที่กำลังเล่นอยู่จริง (in-memory sessions)
    ============================================================ */

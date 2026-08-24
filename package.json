@@ -4,7 +4,7 @@
   "description": "Board game admin + realtime game server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node supervisor.js",
     "dev": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

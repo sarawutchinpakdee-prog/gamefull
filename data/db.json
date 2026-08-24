@@ -2,7 +2,11 @@
   "admins": [
     {
       "username": "admin1234",
-      "password_hash": "$2b$10$.10ZG/XNdiBbKKbPriw5WuV9.xui9fIkjI5V4QBMOfFmKY2wNYhtm"
+      "password_hash": "$2b$10$DGswmdS8GXKKvmnBOV1Ug.XsP9Iv6guIwnK820aceCWFhEWj9imyu"
+    },
+    {
+      "username": "jay",
+      "password_hash": "$2b$10$osskdH5R6TYb.A02LQyI7ecJfUNsj256Sku4g.S7J7hVFuxDXI.1G"
     }
   ],
   "cellTypes": {
@@ -309,7 +313,7 @@
       "column": 6,
       "image_url": "/uploads/1786634540104-f2d7c6b13103157d.png",
       "model_3d_url": "",
-      "updated_at": "2026-08-13T15:26:39.206Z",
+      "updated_at": "2026-08-24T07:30:41.894Z",
       "type": "PROPERTY",
       "name": "อำเภอโพธิ์ชัย",
       "description": "สวนสงฆ์วัดโพธิ์ศรีสะอาด ตั้งอยู่ในพื้นที่อำเภอโพธิ์ชัย จังหวัดร้อยเอ็ด เป็นสถานที่ที่จัดสร้างขึ้นเพื่อเป็น เสนาสนะสงฆ์และสถานที่ปฏิบัติธรรม โดยมีความเกี่ยวข้องกับ หลวงปู่ศิลา สิริจันโท ซึ่งได้รับนิมนต์ให้เข้ามาสร้างเสนาสนะในที่ธรณีสงฆ์ของวัดโพธิ์ศรีสะอาดในช่วงประมาณ พ.ศ. 2562–2565 เพื่อส่งเสริมพระพุทธศาสนาและเป็นสถานที่ยึดเหนี่ยวจิตใจของพุทธศาสนิกชน",
@@ -326,7 +330,7 @@
       "phone": "043 567 077",
       "facebook": "ที่ว่าการอำเภอโพธิ์ชัย",
       "line_id": "",
-      "website": ""
+      "website": "https://www.facebook.com/profile.php?id=100068930990400"
     },
     {
       "id": "cell-11",

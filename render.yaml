@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: bordgame-v3
+    name: bordgame-v2
     runtime: node
     plan: free
     buildCommand: npm install

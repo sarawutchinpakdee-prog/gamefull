@@ -954,6 +954,20 @@
           </button>
           <div class="save-status" id="backupStatus"></div>
         </div>
+
+        <div class="settings-card">
+          <h2 style="font-family: 'Fraunces', serif; font-size: 17px; margin: 0 0 14px">
+            🔄 รีสตาร์ทเซิร์ฟเวอร์
+          </h2>
+          <div class="effect-help" style="margin-bottom: 10px">
+            ใช้เมื่อเซิร์ฟเวอร์ค้าง หรือต้องการล้างสถานะชั่วคราว (เช่น ล็อกอินผิดจนถูกล็อก, ห้องเกมที่ค้าง)
+            ผู้เล่นที่กำลังเล่นอยู่จะหลุดการเชื่อมต่อชั่วขณะ
+          </div>
+          <button class="btn save" id="restartServerBtn" style="width: 100%; background: #b23a2e">
+            🔄 รีสตาร์ทเซิร์ฟเวอร์
+          </button>
+          <div class="save-status" id="restartServerStatus"></div>
+        </div>
       </div>
 
       <div id="accountsView" style="display: none">
@@ -1211,7 +1225,7 @@
           <div class="modal-row">
             <div class="field" style="margin:0">
               <label style="font-size:12px">👥 Facebook</label>
-              <input type="text" id="f_facebook" placeholder="เช่น อำเภอ..." />
+              <input type="text" id="f_facebook" placeholder="วางลิงก์เพจ เช่น https://facebook.com/..." />
             </div>
             <div class="field" style="margin:0">
               <label style="font-size:12px">🌐 เว็บไซต์</label>
@@ -2041,6 +2055,45 @@
         } catch (e) {
           statusEl.style.color = "#b23a2e";
           statusEl.textContent = "กู้คืนไม่สำเร็จ: " + e.message;
+        }
+      });
+
+      /* ---------- restart server (รีสตาร์ทเซิร์ฟเวอร์) ---------- */
+      document.getElementById("restartServerBtn").addEventListener("click", async () => {
+        const statusEl = document.getElementById("restartServerStatus");
+        if (!confirm("รีสตาร์ทเซิร์ฟเวอร์เดี๋ยวนี้? ผู้เล่นที่กำลังเล่นอยู่จะหลุดการเชื่อมต่อชั่วขณะ")) return;
+        const btn = document.getElementById("restartServerBtn");
+        btn.disabled = true;
+        statusEl.style.color = "";
+        statusEl.textContent = "กำลังส่งคำสั่งรีสตาร์ท...";
+        try {
+          await api("/api/admin/restart", { method: "POST" });
+          statusEl.style.color = "#3f7d53";
+          statusEl.textContent = "รีสตาร์ทแล้ว ✓ กำลังรอเซิร์ฟเวอร์กลับมา...";
+          let tries = 0;
+          const poll = setInterval(async () => {
+            tries += 1;
+            try {
+              const res = await fetch("/api/health");
+              if (res.ok) {
+                clearInterval(poll);
+                statusEl.textContent = "เซิร์ฟเวอร์กลับมาแล้ว ✓";
+                btn.disabled = false;
+              }
+            } catch (_) {
+              // ยังไม่กลับมา รอรอบถัดไป
+            }
+            if (tries > 30) {
+              clearInterval(poll);
+              statusEl.style.color = "#b23a2e";
+              statusEl.textContent = "รอนานเกินไป กรุณารีเฟรชหน้าเว็บด้วยตนเอง";
+              btn.disabled = false;
+            }
+          }, 1000);
+        } catch (e) {
+          statusEl.style.color = "#b23a2e";
+          statusEl.textContent = "รีสตาร์ทไม่สำเร็จ: " + e.message;
+          btn.disabled = false;
         }
       });
 
