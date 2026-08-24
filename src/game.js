@@ -138,6 +138,8 @@ function publicState(session) {
         name: cell.name,
         price: Number(cell.price) || 0,
         rent: Number(cell.rent_base) || 0,
+        image_url: cell.image_url || null,
+        description: cell.description || null,
         playerId: buyer.socketId,
       };
     })() : null,

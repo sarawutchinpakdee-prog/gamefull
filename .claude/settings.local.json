@@ -1,7 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(npm start *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \"3000\")",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s http://localhost:4000/api/cell-types)"
     ]
   }
 }

@@ -2,11 +2,7 @@
   "admins": [
     {
       "username": "admin1234",
-      "password_hash": "$2b$10$QrRvK0piTc1y8Gvqd9DnwuKEyRXwwyD3DOtnKmuqJpBdNZS6eG2I."
-    },
-    {
-      "username": "jayj",
-      "password_hash": "$2b$10$WUwrRWMZLwITCZffE49niuCLc8GKsqm8YOiuyOt9f9EeZZVyANW8y"
+      "password_hash": "$2b$10$.10ZG/XNdiBbKKbPriw5WuV9.xui9fIkjI5V4QBMOfFmKY2wNYhtm"
     }
   ],
   "cellTypes": {
@@ -236,13 +232,13 @@
       "column": 6,
       "image_url": "/uploads/1786635827935-e0c4a9ed274a4fbf.png",
       "model_3d_url": "",
-      "updated_at": "2026-08-13T15:43:55.145Z",
+      "updated_at": "2026-08-23T16:56:10.079Z",
       "type": "TAX",
       "name": "ด่านเก็บค่าผ่านทาง",
       "description": "จ่ายค่าธรรมเนียมผ่านทางระหว่างการเดินทาง",
       "price": null,
       "rent_base": null,
-      "effect_value": -5000,
+      "effect_value": -3000,
       "effect_steps": null,
       "attractions": [
         "จ่ายค่าธรรมเนียมผ่านทางระหว่างการเดินทาง"
